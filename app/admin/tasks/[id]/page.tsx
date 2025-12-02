@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { getCurrentUser } from "@/lib/supabase/auth-helpers";
+import { 
+  notifyNewComment, 
+  notifyTaskAssignment,
+  notifyTaskUpdate 
+} from "@/lib/supabase/notification-helpers";
 import {
   Card,
   CardContent,
@@ -66,6 +71,7 @@ export default function AdminTaskDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [darkMode, setDarkMode] = useState(false);
 
   // Edit form state
   const [title, setTitle] = useState("");
@@ -75,6 +81,19 @@ export default function AdminTaskDetailPage() {
   const [deadline, setDeadline] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
   const [newComment, setNewComment] = useState("");
+
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    checkDarkMode();
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -104,13 +123,27 @@ export default function AdminTaskDetailPage() {
           setDeadline(taskData.deadline || "");
           setAssignedTo(taskData.assigned_to || "");
 
-          // Fetch assigned user
+          // Fetch assigned user (including status for inactive users)
           if (taskData.assigned_to) {
-            const { data: userData } = await supabase
+            // Try to fetch with status, fallback if column doesn't exist
+            let userData: any = null;
+            const { data: userDataWithStatus, error: userError } = await supabase
               .from("users")
-              .select("id, full_name, email")
+              .select("id, full_name, email, status")
               .eq("id", taskData.assigned_to)
               .single();
+
+            if (userError) {
+              // Status column might not exist yet, try without it
+              const { data: userDataBasic } = await supabase
+                .from("users")
+                .select("id, full_name, email")
+                .eq("id", taskData.assigned_to)
+                .single();
+              userData = userDataBasic;
+            } else {
+              userData = userDataWithStatus;
+            }
 
             if (userData) {
               setAssignedUser(userData);
@@ -118,14 +151,23 @@ export default function AdminTaskDetailPage() {
           }
         }
 
-        // Fetch all users for reassignment
-        const { data: usersData } = await supabase
+        // Fetch all users for reassignment (including inactive ones for display)
+        let usersData: any[] = [];
+        const { data: usersDataWithStatus, error: usersError } = await supabase
           .from("users")
-          .select("id, full_name, email");
+          .select("id, full_name, email, status");
 
-        if (usersData) {
-          setUsers(usersData);
+        if (usersError) {
+          // Status column might not exist yet, try without it
+          const { data: usersDataBasic } = await supabase
+            .from("users")
+            .select("id, full_name, email");
+          usersData = usersDataBasic || [];
+        } else {
+          usersData = usersDataWithStatus || [];
         }
+
+        setUsers(usersData);
 
         // Fetch comments
         const { data: commentsData } = await supabase
@@ -155,6 +197,12 @@ export default function AdminTaskDetailPage() {
 
     setUpdating(true);
     try {
+      const user = await getCurrentUser();
+      if (!user) return;
+
+      const previousAssignedTo = task.assigned_to;
+      const isNewAssignment = assignedTo && assignedTo !== previousAssignedTo;
+
       const { error } = await supabase
         .from("tasks")
         .update({
@@ -168,6 +216,33 @@ export default function AdminTaskDetailPage() {
         .eq("id", task.id);
 
       if (error) throw error;
+
+      // Send notifications
+      if (isNewAssignment) {
+        // Task was assigned to a new user
+        await notifyTaskAssignment(
+          task.id,
+          assignedTo,
+          user.id,
+          title
+        );
+      } else if (assignedTo && assignedTo === previousAssignedTo) {
+        // Task was updated (not a new assignment)
+        const changes = [];
+        if (status !== task.status) changes.push(`status to ${status.replace("_", " ")}`);
+        if (priority !== task.priority) changes.push(`priority to ${priority}`);
+        if (deadline !== task.deadline) changes.push("deadline");
+        
+        if (changes.length > 0) {
+          await notifyTaskUpdate(
+            task.id,
+            assignedTo,
+            user.id,
+            title,
+            changes.join(", ")
+          );
+        }
+      }
 
       alert("Task updated successfully!");
       setTask({
@@ -211,6 +286,18 @@ export default function AdminTaskDetailPage() {
 
       setComments([...comments, data as Comment]);
       setNewComment("");
+      
+      // Notify assigned employee about the new comment
+      if (task.assigned_to) {
+        await notifyNewComment(
+          task.id,
+          task.assigned_to,
+          user.id,
+          task.title,
+          newComment.trim()
+        );
+      }
+      
       alert("Comment added successfully!");
     } catch (err) {
       console.error("Error adding comment:", err);
@@ -248,9 +335,10 @@ export default function AdminTaskDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full p-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading task details...</p>
+        <div className="flex justify-center gap-2 text-gray-600 dark:text-gray-300">
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.2s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.4s_infinite]">.</span>
         </div>
       </div>
     );
@@ -293,13 +381,13 @@ export default function AdminTaskDetailPage() {
         <Button
           variant="ghost"
           onClick={() => router.push("/admin/tasks")}
-          className="mb-4"
+          className="mb-4 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800"
         >
           <ArrowLeft size={16} className="mr-2" />
           Back to Tasks
         </Button>
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Task Details</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Task Details</h1>
           <Button
             variant="destructive"
             onClick={handleDelete}
@@ -315,35 +403,37 @@ export default function AdminTaskDetailPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Edit Task Form */}
-          <Card className="border-gray-200">
+          <Card className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'}`}>
             <CardHeader>
-              <CardTitle className="text-lg">Edit Task</CardTitle>
+              <CardTitle className={`text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>Edit Task</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="title">Title</Label>
+                <Label htmlFor="title" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Title</Label>
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  className={`${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                 />
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Description</Label>
                 <Textarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
+                  className={`${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Status</Label>
                   <Select value={status} onValueChange={setStatus}>
-                    <SelectTrigger>
+                    <SelectTrigger className={`${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -355,9 +445,9 @@ export default function AdminTaskDetailPage() {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="priority">Priority</Label>
+                  <Label htmlFor="priority" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Priority</Label>
                   <Select value={priority} onValueChange={setPriority}>
-                    <SelectTrigger>
+                    <SelectTrigger className={`${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -370,32 +460,33 @@ export default function AdminTaskDetailPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="deadline">Deadline</Label>
+                <Label htmlFor="deadline" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Deadline</Label>
                 <Input
                   id="deadline"
                   type="date"
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
+                  className={`${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                 />
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="assignedTo">Assigned To</Label>
+                <Label htmlFor="assignedTo" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Assigned To</Label>
                 <Select value={assignedTo} onValueChange={setAssignedTo}>
-                  <SelectTrigger>
+                  <SelectTrigger className={`${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
                     <SelectValue placeholder="Select employee" />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
-                        {user.full_name} ({user.email})
+                        {user.full_name}{user.status === 'inactive' ? ' (inactive)' : ''} ({user.email})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <Button onClick={handleUpdate} disabled={updating} className="w-full">
+              <Button onClick={handleUpdate} disabled={updating} className="w-full bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-100">
                 <Save size={16} className="mr-2" />
                 {updating ? "Saving..." : "Save Changes"}
               </Button>
@@ -403,9 +494,9 @@ export default function AdminTaskDetailPage() {
           </Card>
 
           {/* Comments */}
-          <Card className="border-gray-200">
+          <Card className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'}`}>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className={`text-lg flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 <FileText size={18} />
                 Comments ({comments.length})
               </CardTitle>
@@ -414,7 +505,7 @@ export default function AdminTaskDetailPage() {
               {/* Comments List */}
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {comments.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                     No comments yet. Add the first comment!
                   </p>
                 ) : (
@@ -429,7 +520,7 @@ export default function AdminTaskDetailPage() {
                           className={`max-w-[80%] rounded-lg p-3 border ${
                             isOwnComment
                               ? 'bg-blue-500 text-white border-blue-600'
-                              : 'bg-gray-50 text-gray-900 border-gray-200'
+                              : 'bg-gray-50 text-gray-900 border-gray-200 dark:bg-gray-800 dark:text-white dark:border-gray-700'
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-2">
@@ -441,15 +532,15 @@ export default function AdminTaskDetailPage() {
                               </span>
                             </div>
                             <div>
-                              <p className={`text-sm font-medium ${isOwnComment ? 'text-white' : 'text-gray-900'}`}>
+                              <p className={`text-sm font-medium ${isOwnComment ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                                 {isOwnComment ? 'You' : (comment.user?.full_name || "Unknown")}
                               </p>
-                              <p className={`text-xs ${isOwnComment ? 'text-blue-100' : 'text-gray-500'}`}>
+                              <p className={`text-xs ${isOwnComment ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
                                 {new Date(comment.created_at).toLocaleString()}
                               </p>
                             </div>
                           </div>
-                          <p className={`text-sm whitespace-pre-wrap ${isOwnComment ? 'text-white' : 'text-gray-700'}`}>
+                          <p className={`text-sm whitespace-pre-wrap ${isOwnComment ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                             {comment.comment}
                           </p>
                         </div>
@@ -460,16 +551,16 @@ export default function AdminTaskDetailPage() {
               </div>
 
               {/* Add Comment Form */}
-              <div className="border-t pt-4">
+              <div className={`border-t pt-4 ${darkMode ? 'border-gray-800' : 'border-gray-200'}`}>
                 <Textarea
                   placeholder="Add a comment..."
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   rows={3}
-                  className="w-full"
+                  className={`w-full ${darkMode ? 'bg-gray-900 border-gray-800 text-white placeholder:text-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-500'}`}
                 />
                 <Button
-                  className="mt-3"
+                  className="mt-3 bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-100"
                   onClick={handleSubmitComment}
                   disabled={submittingComment || !newComment.trim()}
                 >
@@ -484,13 +575,13 @@ export default function AdminTaskDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Current Details */}
-          <Card className="border-gray-200">
+          <Card className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'}`}>
             <CardHeader>
-              <CardTitle className="text-lg">Current Details</CardTitle>
+              <CardTitle className={`text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>Current Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-600">Priority</label>
+                <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Priority</label>
                 <div className="mt-1">
                   <Badge className={`${getPriorityColor(task.priority)} capitalize`}>
                     {task.priority}
@@ -499,7 +590,7 @@ export default function AdminTaskDetailPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-600">Status</label>
+                <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</label>
                 <div className="mt-1">
                   <Badge className={`${getStatusColor(task.status)} capitalize`}>
                     {task.status.replace("_", " ")}
@@ -509,21 +600,24 @@ export default function AdminTaskDetailPage() {
 
               {assignedUser && (
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Assigned To</label>
-                  <p className="mt-1 text-gray-900">{assignedUser.full_name}</p>
-                  <p className="text-xs text-gray-500">{assignedUser.email}</p>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Assigned To</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">
+                    {assignedUser.full_name}
+                    {assignedUser.status === 'inactive' && <span className="text-gray-500 dark:text-gray-400"> (inactive)</span>}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{assignedUser.email}</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Task Info */}
-          <Card className="border-gray-200">
+          <Card className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'}`}>
             <CardHeader>
-              <CardTitle className="text-lg">Task Information</CardTitle>
+              <CardTitle className={`text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>Task Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center gap-2 text-gray-600">
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                 <Clock size={16} />
                 <div>
                   <p className="font-medium">Created</p>
@@ -532,7 +626,7 @@ export default function AdminTaskDetailPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-gray-600">
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                 <Clock size={16} />
                 <div>
                   <p className="font-medium">Last Updated</p>
@@ -542,7 +636,7 @@ export default function AdminTaskDetailPage() {
                 </div>
               </div>
               {task.deadline && (
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                   <Calendar size={16} />
                   <div>
                     <p className="font-medium">Deadline</p>

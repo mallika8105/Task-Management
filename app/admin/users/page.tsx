@@ -237,7 +237,11 @@ export default function AdminUsersPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        Loading users...
+        <div className="flex justify-center gap-2 text-gray-900 dark:text-gray-300">
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.2s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.4s_infinite]">.</span>
+        </div>
       </div>
     );
   }
@@ -256,18 +260,18 @@ export default function AdminUsersPage() {
 
   return (
     <div className="p-3 md:p-6">
-      <Card className="border-gray-200 dark:border-gray-800 shadow-sm">
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-black border-b border-gray-100 dark:border-gray-800 p-4 md:p-6">
+      <Card className="bg-white dark:bg-black border-gray-200 dark:border-gray-800 shadow-sm">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 border-b border-purple-500 dark:border-purple-800 p-4 md:p-6">
           <div>
-            <CardTitle className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">User Management</CardTitle>
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">Manage users and send invitations</p>
+            <CardTitle className="text-xl md:text-2xl font-bold text-white">User Management</CardTitle>
+            <p className="text-xs md:text-sm text-white/90 dark:text-white/80 mt-1">Manage users and send invitations</p>
           </div>
           <Dialog
             open={isInviteDialogOpen}
             onOpenChange={setIsInviteDialogOpen}
           >
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm w-full sm:w-auto">
+              <Button className="bg-teal-600 hover:bg-teal-700 text-white text-sm w-full sm:w-auto">
                 <UserPlus size={16} className="mr-2" />
                 Invite User
               </Button>
@@ -322,23 +326,23 @@ export default function AdminUsersPage() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="dark:border-gray-800">
-                  <TableHead className="text-gray-900 dark:text-white text-sm">Full Name</TableHead>
-                  <TableHead className="text-gray-900 dark:text-white text-sm">Email</TableHead>
-                  <TableHead className="text-gray-900 dark:text-white text-sm">Role</TableHead>
-                  <TableHead className="text-gray-900 dark:text-white text-sm">Actions</TableHead>
+                <TableRow className="bg-gray-50 dark:bg-gray-900/50 border-b-2 border-gray-200 dark:border-gray-800">
+                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Full Name</TableHead>
+                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Email</TableHead>
+                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Role</TableHead>
+                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user.id} className="dark:border-gray-800">
-                    <TableCell className="text-sm dark:text-gray-300">
+                  <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 border-b border-teal-300 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500">
+                    <TableCell className="text-sm text-slate-800 dark:text-slate-100 font-medium">
                       <div className="truncate max-w-[150px] md:max-w-none">{user.full_name}</div>
                     </TableCell>
-                    <TableCell className="text-sm dark:text-gray-300">
+                    <TableCell className="text-sm text-slate-800 dark:text-slate-100 font-medium">
                       <div className="truncate max-w-[150px] md:max-w-none">{user.email}</div>
                     </TableCell>
-                    <TableCell className="text-sm dark:text-gray-300 capitalize">{user.role}</TableCell>
+                    <TableCell className="text-sm text-slate-800 dark:text-slate-100 font-medium capitalize">{user.role}</TableCell>
                     <TableCell>
                       <Select
                         value={user.role}
@@ -366,12 +370,12 @@ export default function AdminUsersPage() {
 
       {/* Invitations Section */}
       {invitations.length > 0 && (
-        <Card className="border-gray-200 dark:border-gray-800 shadow-sm mt-4 md:mt-6">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-black border-b border-gray-100 dark:border-gray-800 p-4 md:p-6">
-            <CardTitle className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
+        <Card className="bg-white dark:bg-black border-gray-200 dark:border-gray-800 shadow-sm mt-4 md:mt-6">
+          <CardHeader className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 border-b border-purple-500 dark:border-purple-800 p-4 md:p-6">
+            <CardTitle className="text-lg md:text-xl font-bold text-white">
               Pending Invitations ({invitations.length})
             </CardTitle>
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-xs md:text-sm text-white/90 dark:text-white/80 mt-1">
               Invitation history and status
             </p>
           </CardHeader>
@@ -379,20 +383,20 @@ export default function AdminUsersPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="dark:border-gray-800">
-                    <TableHead className="text-gray-900 dark:text-white text-sm">Email</TableHead>
-                    <TableHead className="text-gray-900 dark:text-white text-sm">Invited On</TableHead>
-                    <TableHead className="text-gray-900 dark:text-white text-sm">Status</TableHead>
-                    <TableHead className="text-gray-900 dark:text-white text-sm">Actions</TableHead>
+                  <TableRow className="bg-gray-50 dark:bg-gray-900/50 border-b-2 border-gray-200 dark:border-gray-800">
+                    <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Email</TableHead>
+                    <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Invited On</TableHead>
+                    <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Status</TableHead>
+                    <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invitations.map((invitation) => (
-                    <TableRow key={invitation.id} className="dark:border-gray-800">
-                      <TableCell className="text-sm dark:text-gray-300">
+                {invitations.map((invitation) => (
+                    <TableRow key={invitation.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 border-b border-teal-300 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500">
+                      <TableCell className="text-sm text-slate-800 dark:text-slate-100 font-medium">
                         <div className="truncate max-w-[150px] md:max-w-none">{invitation.email}</div>
                       </TableCell>
-                      <TableCell className="text-sm dark:text-gray-300">
+                      <TableCell className="text-sm text-slate-800 dark:text-slate-100 font-medium">
                         {new Date(invitation.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell>

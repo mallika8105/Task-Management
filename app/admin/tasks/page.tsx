@@ -39,12 +39,14 @@ import {
 } from "@/app/components/ui/dialog";
 import { sendTaskAssignmentNotification } from '@/lib/brevo/emailService';
 import { useDebounce } from '@/app/hooks/use-debounce';
+import { notifyTaskAssignment, notifyTaskUpdate } from '@/lib/supabase/notification-helpers';
 
 interface User {
   id: string;
   full_name: string;
   email: string;
   role: "admin" | "employee";
+  status?: "active" | "inactive";
 }
 
 interface Task {
@@ -58,7 +60,7 @@ interface Task {
   created_by: string;
   created_at: string;
   updated_at: string;
-  users: { full_name: string; email: string } | null; // Added email for search
+  users: { full_name: string; email: string; status?: "active" | "inactive" } | null; // Added email for search and status
 }
 
 export default function AdminTasksPage() {
@@ -118,14 +120,27 @@ export default function AdminTasksPage() {
         }
         setCurrentUser(user);
 
-        // Fetch all users first
-        const { data: usersData, error: usersError } = await supabase
+        // Fetch all users (including inactive ones for display purposes)
+        // Try to fetch with status column, fallback if column doesn't exist yet
+        let usersData: any[] = [];
+        const { data: usersDataWithStatus, error: usersError } = await supabase
           .from("users")
-          .select("id, full_name, email");
+          .select("id, full_name, email, status");
 
         if (usersError) {
-          console.error("Users error:", usersError);
-          throw usersError;
+          // Status column might not exist yet, try without it
+          console.warn("Fetching users without status column:", usersError);
+          const { data: usersDataBasic, error: basicError } = await supabase
+            .from("users")
+            .select("id, full_name, email");
+          
+          if (basicError) {
+            console.error("Users error:", basicError);
+            throw basicError;
+          }
+          usersData = usersDataBasic || [];
+        } else {
+          usersData = usersDataWithStatus || [];
         }
         setUsers(usersData as User[]);
 
@@ -238,11 +253,21 @@ export default function AdminTasksPage() {
       if (newTaskAssignedTo && newTaskWithUser.users) {
         const assignedUser = newTaskWithUser.users;
         const taskLink = `${process.env.NEXT_PUBLIC_BASE_URL}/mytasks/${createdTask.id}`;
+        
+        // Create in-app notification
+        await notifyTaskAssignment(
+          createdTask.id,
+          newTaskAssignedTo,
+          currentUser.id,
+          createdTask.title
+        );
+        
+        // Send email notification
         await sendTaskAssignmentNotification(
           assignedUser.id,
           createdTask.title,
           taskLink,
-          "Mallika M." // Assigner's name
+          currentUser.full_name || "Admin"
         );
       }
       setNewTaskAssignedTo("");
@@ -261,6 +286,9 @@ export default function AdminTasksPage() {
 
   const handleStatusChange = async (taskId: string, newStatus: "not_picked" | "in_progress" | "completed") => {
     try {
+      const task = tasks.find(t => t.id === taskId);
+      const oldStatus = task?.status;
+
       const { error } = await supabase
         .from("tasks")
         .update({ status: newStatus })
@@ -274,6 +302,17 @@ export default function AdminTasksPage() {
           task.id === taskId ? { ...task, status: newStatus } : task
         )
       );
+
+      // Send notification if task is assigned and status changed
+      if (task && task.assigned_to && oldStatus !== newStatus && currentUser) {
+        await notifyTaskUpdate(
+          taskId,
+          task.assigned_to,
+          currentUser.id,
+          task.title,
+          `status to ${newStatus.replace("_", " ")}`
+        );
+      }
     } catch (err) {
       console.error("Error updating status:", err);
       alert("Failed to update status");
@@ -333,16 +372,45 @@ export default function AdminTasksPage() {
         )
       );
 
-      // Send task assignment notification if assigned_to changed
+      // Send notifications if assigned_to changed or task was updated
       if (editingTask.assigned_to && editingTask.assigned_to !== oldAssignedTo && updatedTaskWithUser.users) {
+        // New assignment
         const assignedUser = updatedTaskWithUser.users;
         const taskLink = `${process.env.NEXT_PUBLIC_BASE_URL}/mytasks/${editingTask.id}`;
+        
+        // Create in-app notification
+        await notifyTaskAssignment(
+          editingTask.id,
+          editingTask.assigned_to,
+          currentUser.id,
+          editingTask.title
+        );
+        
+        // Send email notification
         await sendTaskAssignmentNotification(
           assignedUser.id,
           editingTask.title,
           taskLink,
-          "Mallika M." // Assigner's name
+          currentUser.full_name || "Admin"
         );
+      } else if (editingTask.assigned_to && editingTask.assigned_to === oldAssignedTo) {
+        // Task was updated (not a new assignment)
+        const changes = [];
+        if (editingTask.status !== originalTask?.status) changes.push(`status to ${editingTask.status.replace("_", " ")}`);
+        if (editingTask.priority !== originalTask?.priority) changes.push(`priority to ${editingTask.priority}`);
+        if (editingTask.deadline !== originalTask?.deadline) changes.push("deadline");
+        if (editingTask.title !== originalTask?.title) changes.push("title");
+        if (editingTask.description !== originalTask?.description) changes.push("description");
+        
+        if (changes.length > 0) {
+          await notifyTaskUpdate(
+            editingTask.id,
+            editingTask.assigned_to,
+            currentUser.id,
+            editingTask.title,
+            changes.join(", ")
+          );
+        }
       }
 
       setIsEditDialogOpen(false);
@@ -358,7 +426,11 @@ export default function AdminTasksPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        Loading tasks...
+        <div className="flex justify-center gap-2 text-gray-900 dark:text-gray-300">
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.2s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.4s_infinite]">.</span>
+        </div>
       </div>
     );
   }
@@ -378,13 +450,13 @@ export default function AdminTasksPage() {
   return (
     <div className="p-3 md:p-6">
       <Card className="bg-white dark:bg-black border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-black via-gray-900 to-black dark:from-gray-950 dark:via-black dark:to-gray-950 border-b border-gray-800 dark:border-gray-900 p-4 md:p-6">
+        <CardHeader className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 border-b border-purple-500 dark:border-purple-800 p-4 md:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
             <div>
               <CardTitle className="text-xl md:text-2xl font-bold text-white">
                 Task Management
               </CardTitle>
-              <p className="text-xs md:text-sm text-gray-300 dark:text-gray-400 mt-1">
+              <p className="text-xs md:text-sm text-white/90 dark:text-white/80 mt-1">
                 Create and manage tasks for your team
               </p>
             </div>
@@ -647,7 +719,7 @@ export default function AdminTasksPage() {
               </TableHeader>
               <TableBody>
                 {tasks.map((task) => (
-                  <TableRow key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 dark:border-gray-800 transition-colors border-b border-gray-100 dark:border-gray-800/50">
+                  <TableRow key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b border-teal-300 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500">
                     <TableCell 
                       className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer text-sm hover:underline"
                       onClick={() => router.push(`/admin/tasks/${task.id}`)}
@@ -688,16 +760,20 @@ export default function AdminTasksPage() {
                       </span>
                     </TableCell>
                     <TableCell 
-                      className="cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                      className="cursor-pointer text-sm text-slate-800 dark:text-slate-100 font-medium"
                       onClick={() => router.push(`/admin/tasks/${task.id}`)}
                     >
                       {task.deadline}
                     </TableCell>
                     <TableCell 
-                      className="cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                      className="cursor-pointer text-sm text-slate-800 dark:text-slate-100 font-medium"
                       onClick={() => router.push(`/admin/tasks/${task.id}`)}
                     >
-                      <div className="truncate max-w-[150px] md:max-w-none">{task.users?.full_name || "Unassigned"}</div>
+                      <div className="truncate max-w-[150px] md:max-w-none">
+                        {task.users?.full_name 
+                          ? `${task.users.full_name}${task.users.status === 'inactive' ? ' (inactive)' : ''}`
+                          : "Unassigned"}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -722,7 +798,7 @@ export default function AdminTasksPage() {
               <h3 className="text-sm md:text-base font-semibold mb-2 text-gray-900 dark:text-white">
                 No tasks found
               </h3>
-              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-4">
+              <p className="text-xs md:text-sm text-slate-700 dark:text-slate-300 mb-4">
                 {searchParams.get("search") ? `No tasks match "${searchParams.get("search")}"` : "Create your first task to get started"}
               </p>
               {!searchParams.get("search") && (

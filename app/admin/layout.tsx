@@ -5,6 +5,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { getCurrentUser, signOut } from "@/lib/supabase/auth-helpers";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
+import NotificationPanel from "@/app/components/NotificationPanel";
+import Image from "next/image";
 import {
   SidebarProvider,
   Sidebar,
@@ -20,7 +22,6 @@ import {
   ListTodo,
   Settings,
   Search,
-  Bell,
   Moon,
   LogOut,
   Shield,
@@ -34,7 +35,6 @@ export default function AdminLayout({
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(0); // Initialize with 0, will be updated when actual notifications arrive
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
   const pathname = usePathname();
@@ -65,28 +65,43 @@ export default function AdminLayout({
     }
   };
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await getCurrentUser();
-        if (!currentUser) {
-          router.push("/auth/login");
-          return;
-        }
-        if (currentUser.role !== "admin") {
-          router.push("/dashboard");
-          return;
-        }
-        setUser(currentUser);
-      } catch (err) {
-        console.error("Error fetching user:", err);
+  const fetchUser = async () => {
+    try {
+      const currentUser = await getCurrentUser();
+      if (!currentUser) {
         router.push("/auth/login");
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
+      if (currentUser.role !== "admin") {
+        router.push("/dashboard");
+        return;
+      }
+      setUser(currentUser);
+    } catch (err) {
+      console.error("Error fetching user:", err);
+      router.push("/auth/login");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchUser();
   }, [router]);
+
+  // Listen for avatar upload events to refresh user data
+  useEffect(() => {
+    const handleAvatarUpload = (event: any) => {
+      if (event.detail?.userId === user?.id) {
+        fetchUser(); // Refresh user data to get updated profile image
+      }
+    };
+
+    window.addEventListener('avatarUploaded', handleAvatarUpload);
+    return () => {
+      window.removeEventListener('avatarUploaded', handleAvatarUpload);
+    };
+  }, [user?.id]);
 
   const handleSignOut = async () => {
     try {
@@ -104,15 +119,10 @@ export default function AdminLayout({
           darkMode ? "bg-black" : "bg-gray-50"
         }`}
       >
-        <div className="text-center">
-          <div
-            className={`animate-spin rounded-full h-12 w-12 border-b-2 ${
-              darkMode ? "border-white" : "border-gray-900"
-            } mx-auto`}
-          ></div>
-          <p className={`mt-4 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-            Loading...
-          </p>
+        <div className="flex justify-center gap-2 text-black">
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.2s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.4s_infinite]">.</span>
         </div>
       </div>
     );
@@ -132,19 +142,17 @@ export default function AdminLayout({
         {/* Sidebar */}
         <Sidebar>
           <SidebarHeader>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 h-8">
               <div className="w-8 h-8 bg-gray-900 rounded flex items-center justify-center">
                 <Shield size={18} className="text-white" />
               </div>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`font-semibold text-sm ${
-                    darkMode ? "text-white" : ""
-                  }`}
-                >
-                  Admin Panel
-                </span>
-              </div>
+              <span
+                className={`font-semibold text-sm leading-8 ${
+                  darkMode ? "text-white" : ""
+                }`}
+              >
+                Admin Panel
+              </span>
             </div>
           </SidebarHeader>
 
@@ -196,8 +204,9 @@ export default function AdminLayout({
               </div>
               <SidebarMenu>
                 <SidebarMenuItem
+                  active={isActive("/admin/settings")}
                   icon={<Settings size={20} />}
-                  onClick={() => {}}
+                  onClick={() => router.push("/admin/settings")}
                 >
                   System Settings
                 </SidebarMenuItem>
@@ -207,11 +216,31 @@ export default function AdminLayout({
 
           <SidebarFooter>
             <div className="space-y-2">
-              <div className="flex items-center gap-3 p-2">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold">
-                  {user.user_metadata?.full_name?.charAt(0)?.toUpperCase() ||
-                    user.email?.charAt(0)?.toUpperCase()}
-                </div>
+              <div 
+                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                  darkMode 
+                    ? "hover:bg-gray-800" 
+                    : "hover:bg-gray-100"
+                }`}
+                onClick={() => router.push("/admin/account")}
+                title="View Account"
+              >
+                {user.profile_image ? (
+                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-600">
+                    <Image
+                      src={user.profile_image}
+                      alt="Profile"
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold">
+                    {user.user_metadata?.full_name?.charAt(0)?.toUpperCase() ||
+                      user.email?.charAt(0)?.toUpperCase()}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p
                     className={`text-sm font-medium truncate ${
@@ -250,28 +279,13 @@ export default function AdminLayout({
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Top Bar */}
           <header
-            className={`border-b px-6 py-4 ${
+            className={`border-b px-6 h-16 flex items-center ${
               darkMode ? "bg-black border-gray-800" : "bg-white border-gray-200"
             }`}
           >
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-end w-full">
               <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`relative ${
-                    darkMode
-                      ? "text-gray-300 hover:text-white hover:bg-gray-800"
-                      : ""
-                  }`}
-                >
-                  <Bell size={20} className={darkMode ? "text-gray-300" : ""} />
-                  {notificationCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
-                      {notificationCount}
-                    </span>
-                  )}
-                </Button>
+                <NotificationPanel userId={user.id} darkMode={darkMode} />
                 <Button
                   variant="ghost"
                   size="icon"

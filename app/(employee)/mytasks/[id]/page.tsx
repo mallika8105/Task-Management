@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { getCurrentUser } from "@/lib/supabase/auth-helpers";
+import { notifyNewComment, notifyTaskCompletion } from "@/lib/supabase/notification-helpers";
 import {
   Card,
   CardContent,
@@ -64,6 +65,20 @@ export default function TaskDetailPage() {
   const [status, setStatus] = useState<string>("");
   const [newComment, setNewComment] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    checkDarkMode();
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -135,6 +150,18 @@ export default function TaskDetailPage() {
 
       setComments([...comments, data as Comment]);
       setNewComment("");
+      
+      // Notify admin about the new comment
+      if (task.created_by) {
+        await notifyNewComment(
+          task.id,
+          task.created_by,
+          user.id,
+          task.title,
+          newComment.trim()
+        );
+      }
+      
       alert("Comment added successfully!");
     } catch (err) {
       console.error("Error adding comment:", err);
@@ -149,12 +176,25 @@ export default function TaskDetailPage() {
 
     setUpdating(true);
     try {
+      const user = await getCurrentUser();
+      if (!user) return;
+
       const { error } = await supabase
         .from("tasks")
         .update({ status })
         .eq("id", task.id);
 
       if (error) throw error;
+
+      // Notify admin if task is marked as completed
+      if (status === "completed" && task.created_by) {
+        await notifyTaskCompletion(
+          task.id,
+          task.created_by,
+          user.id,
+          task.title
+        );
+      }
 
       alert("Task status updated successfully!");
       setTask({ ...task, status: status as Task["status"] });
@@ -169,9 +209,10 @@ export default function TaskDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full p-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading task details...</p>
+        <div className="flex justify-center gap-2 text-gray-600 dark:text-gray-300">
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.2s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.4s_infinite]">.</span>
         </div>
       </div>
     );
@@ -184,26 +225,26 @@ export default function TaskDetailPage() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-200 dark:border-red-700";
       case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-700";
       case "low":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-200 dark:border-green-700";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-200 dark:border-green-700";
       case "in_progress":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700";
       case "not_picked":
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600";
     }
   };
 
@@ -214,33 +255,33 @@ export default function TaskDetailPage() {
         <Button
           variant="ghost"
           onClick={() => router.push("/mytasks")}
-          className="mb-4"
+          className="mb-4 text-gray-700 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800"
         >
           <ArrowLeft size={16} className="mr-2" />
           Back to Tasks
         </Button>
-        <h1 className="text-2xl font-bold text-gray-900">{task.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{task.title}</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Task Details */}
-          <Card className="border-gray-200">
+          <Card className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'}`}>
             <CardHeader>
-              <CardTitle className="text-lg">Task Details</CardTitle>
+              <CardTitle className={`text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>Task Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-600">
+                <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
                   Description
                 </label>
-                <p className="mt-1 text-gray-900">{task.description}</p>
+                <p className="mt-1 text-gray-900 dark:text-white">{task.description}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     Priority
                   </label>
                   <div className="mt-1">
@@ -252,7 +293,7 @@ export default function TaskDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     Current Status
                   </label>
                   <div className="mt-1">
@@ -266,11 +307,11 @@ export default function TaskDetailPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
                   <Calendar size={16} />
                   Deadline
                 </label>
-                <p className="mt-1 text-gray-900">
+                <p className="mt-1 text-gray-900 dark:text-white">
                   {new Date(task.deadline).toLocaleDateString("en-US", {
                     weekday: "long",
                     year: "numeric",
@@ -283,9 +324,9 @@ export default function TaskDetailPage() {
           </Card>
 
           {/* Comments */}
-          <Card className="border-gray-200">
+          <Card className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'}`}>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className={`text-lg flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 <FileText size={18} />
                 Comments ({comments.length})
               </CardTitle>
@@ -294,7 +335,7 @@ export default function TaskDetailPage() {
               {/* Comments List */}
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {comments.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                     No comments yet. Be the first to comment!
                   </p>
                 ) : (
@@ -309,25 +350,25 @@ export default function TaskDetailPage() {
                           className={`max-w-[80%] rounded-lg p-3 border ${
                             isOwnComment
                               ? 'bg-blue-500 text-white border-blue-600'
-                              : 'bg-gray-50 text-gray-900 border-gray-200'
+                              : 'bg-gray-50 text-gray-900 border-gray-200 dark:bg-gray-800 dark:text-white dark:border-gray-700'
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-2">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              isOwnComment ? 'bg-blue-600' : 'bg-blue-100'
+                              isOwnComment ? 'bg-blue-600' : 'bg-blue-100 dark:bg-blue-800'
                             }`}>
-                              <User size={16} className={isOwnComment ? 'text-white' : 'text-blue-600'} />
+                              <User size={16} className={isOwnComment ? 'text-white' : 'text-blue-600 dark:text-blue-200'} />
                             </div>
                             <div>
-                              <p className={`text-sm font-medium ${isOwnComment ? 'text-white' : 'text-gray-900'}`}>
+                              <p className={`text-sm font-medium ${isOwnComment ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                                 {isOwnComment ? 'You' : (comment.user?.full_name || "Unknown")}
                               </p>
-                              <p className={`text-xs ${isOwnComment ? 'text-blue-100' : 'text-gray-500'}`}>
+                              <p className={`text-xs ${isOwnComment ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
                                 {new Date(comment.created_at).toLocaleString()}
                               </p>
                             </div>
                           </div>
-                          <p className={`text-sm whitespace-pre-wrap ${isOwnComment ? 'text-white' : 'text-gray-700'}`}>
+                          <p className={`text-sm whitespace-pre-wrap ${isOwnComment ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                             {comment.comment}
                           </p>
                         </div>
@@ -338,16 +379,16 @@ export default function TaskDetailPage() {
               </div>
 
               {/* Add Comment Form */}
-              <div className="border-t pt-4">
+              <div className={`border-t pt-4 ${darkMode ? 'border-gray-800' : 'border-gray-200'}`}>
                 <Textarea
                   placeholder="Add a comment..."
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   rows={3}
-                  className="w-full"
+                  className={`w-full ${darkMode ? 'bg-gray-900 border-gray-800 text-white placeholder:text-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-500'}`}
                 />
                 <Button
-                  className="mt-3"
+                  className="mt-3 bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-100"
                   onClick={handleSubmitComment}
                   disabled={submittingComment || !newComment.trim()}
                 >
@@ -362,10 +403,10 @@ export default function TaskDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Update Status */}
-          <Card className="border-gray-200">
+          <Card className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'}`}>
             <CardHeader>
-              <CardTitle className="text-lg">Update Status</CardTitle>
-              <CardDescription className="text-xs">
+              <CardTitle className={`text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>Update Status</CardTitle>
+              <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 Change the current status of this task
               </CardDescription>
             </CardHeader>
@@ -383,7 +424,7 @@ export default function TaskDetailPage() {
               <Button
                 onClick={handleUpdateStatus}
                 disabled={updating || status === task.status}
-                className="w-full"
+                className="w-full bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-100"
               >
                 {updating ? "Updating..." : "Update Status"}
               </Button>
@@ -391,12 +432,12 @@ export default function TaskDetailPage() {
           </Card>
 
           {/* Task Info */}
-          <Card className="border-gray-200">
+          <Card className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'}`}>
             <CardHeader>
-              <CardTitle className="text-lg">Task Information</CardTitle>
+              <CardTitle className={`text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>Task Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center gap-2 text-gray-600">
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                 <Clock size={16} />
                 <div>
                   <p className="font-medium">Created</p>
@@ -405,7 +446,7 @@ export default function TaskDetailPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-gray-600">
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                 <Clock size={16} />
                 <div>
                   <p className="font-medium">Last Updated</p>

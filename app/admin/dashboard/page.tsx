@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
@@ -30,7 +30,7 @@ export default function AdminDashboardPage() {
     pendingInvites: 0,
   });
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
-  const [recentTasks, setRecentTasks] = useState<any[]>([]);
+  const [allTasks, setAllTasks] = useState<any[]>([]);
   const [tasksByStatus, setTasksByStatus] = useState({
     completed: 0,
     inProgress: 0,
@@ -38,6 +38,11 @@ export default function AdminDashboardPage() {
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [activityData, setActivityData] = useState<{ date: string; tasks: number; users: number }[]>([]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentPage, setCurrentPage] = useState(1);
+  const tasksPerPage = 5;
 
   useEffect(() => {
     const checkDarkMode = () => {
@@ -58,6 +63,11 @@ export default function AdminDashboardPage() {
     const urlSearch = params.get("search") || "";
     setSearchQuery(urlSearch);
   }, []);
+
+  // Reset to page 1 when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterStatus]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -84,8 +94,41 @@ export default function AdminDashboardPage() {
 
         if (tasksError) throw tasksError;
 
-        // Set recent tasks (last 10)
-        setRecentTasks(tasks?.slice(0, 10) || []);
+        // Store all tasks for filtering
+        setAllTasks(tasks || []);
+
+        // Calculate activity data for the last 30 days
+        const last30Days = Array.from({ length: 30 }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (29 - i));
+          return date.toISOString().split('T')[0];
+        });
+
+        const activityByDay = last30Days.map(date => {
+          const dayStart = new Date(date);
+          const dayEnd = new Date(date);
+          dayEnd.setHours(23, 59, 59, 999);
+
+          const tasksCompleted = tasks?.filter((t: any) => {
+            if (t.status === 'completed' && t.updated_at) {
+              const updatedDate = new Date(t.updated_at);
+              return updatedDate >= dayStart && updatedDate <= dayEnd;
+            }
+            return false;
+          }).length || 0;
+
+          const activeUsers = users?.filter((u: any) => {
+            if (u.last_sign_in_at) {
+              const lastSignIn = new Date(u.last_sign_in_at);
+              return lastSignIn >= dayStart && lastSignIn <= dayEnd;
+            }
+            return false;
+          }).length || 0;
+
+          return { date, tasks: tasksCompleted, users: activeUsers };
+        });
+
+        setActivityData(activityByDay);
 
         // Calculate stats
         const totalUsers = users?.length || 0;
@@ -134,9 +177,10 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full p-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        <div className={`flex justify-center gap-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.2s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.4s_infinite]">.</span>
         </div>
       </div>
     );
@@ -168,9 +212,62 @@ export default function AdminDashboardPage() {
           <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>Welcome back, Admin!</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-          <div className={`flex items-center justify-center gap-2 px-3 py-2 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-200'} border rounded-lg text-xs md:text-sm`}>
-            <Calendar size={16} className={darkMode ? 'text-gray-400' : 'text-gray-500'} />
-            <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>This Month</span>
+          <div className="relative">
+            <button
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className={`flex items-center justify-center gap-2 px-3 py-2 border rounded-lg text-xs md:text-sm cursor-pointer transition-all w-full ${
+                showDatePicker
+                  ? darkMode 
+                    ? 'bg-purple-900 border-purple-700 shadow-lg shadow-purple-900/50' 
+                    : 'bg-purple-50 border-purple-300 shadow-lg shadow-purple-200/50'
+                  : darkMode 
+                    ? 'bg-gray-900 border-gray-800 hover:bg-gray-800 hover:border-gray-700' 
+                    : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+              }`}
+            >
+              <Calendar size={16} className={darkMode ? 'text-purple-400' : 'text-purple-600'} />
+              <span className={
+                showDatePicker
+                  ? darkMode ? 'text-purple-300' : 'text-purple-700'
+                  : darkMode ? 'text-gray-300' : 'text-gray-700'
+              }>
+                {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            </button>
+            
+            {showDatePicker && (
+              <div className={`absolute right-0 mt-2 p-4 border rounded-lg shadow-lg z-50 w-64 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <label className={`text-xs font-medium mb-1 block ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Select Date
+                    </label>
+                    <input
+                      type="date"
+                      value={selectedDate.toISOString().split('T')[0]}
+                      onChange={(e) => {
+                        setSelectedDate(new Date(e.target.value));
+                        setShowDatePicker(false);
+                      }}
+                      className={`w-full px-3 py-2 border rounded-md text-sm ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedDate(new Date());
+                      setShowDatePicker(false);
+                    }}
+                    className={`w-full px-3 py-2 text-xs font-medium rounded-md transition-all ${
+                      darkMode 
+                        ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg' 
+                        : 'bg-purple-500 hover:bg-purple-600 text-white shadow-md hover:shadow-lg'
+                    }`}
+                  >
+                    Reset to Today
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           <Button className="bg-gray-900 text-white hover:bg-gray-800 text-sm w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-100">
             <Download size={16} className="mr-2" />
@@ -182,17 +279,17 @@ export default function AdminDashboardPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-6">
         {adminStats.map((stat, idx) => (
-          <Card key={idx} className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'} hover:shadow-md transition-shadow`}>
+          <Card key={idx} className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-blue-100'} hover:shadow-md transition-shadow`}>
             <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <p className={`text-xs md:text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>{stat.label}</p>
                   <p className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{stat.value}</p>
                   <div className="flex items-center gap-1">
-                    <span className={`text-xs font-semibold ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`text-xs font-semibold ${stat.change.startsWith('+') ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                       {stat.change}
                     </span>
-                    <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>vs last month</span>
+                    <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>vs last month</span>
                   </div>
                 </div>
                 <div className={`p-4 rounded-xl ${stat.color} ${stat.color.replace('bg-', 'bg-opacity-10 bg-')}`}>
@@ -216,49 +313,161 @@ export default function AdminDashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
-            <div className="h-40 md:h-48 relative overflow-x-auto">
-              <svg className="w-full h-full" viewBox="0 0 700 200">
-                {/* Grid lines */}
-                <line x1="0" y1="0" x2="700" y2="0" stroke="#e5e7eb" strokeWidth="1" />
-                <line x1="0" y1="50" x2="700" y2="50" stroke="#e5e7eb" strokeWidth="1" />
-                <line x1="0" y1="100" x2="700" y2="100" stroke="#e5e7eb" strokeWidth="1" />
-                <line x1="0" y1="150" x2="700" y2="150" stroke="#e5e7eb" strokeWidth="1" />
-                <line x1="0" y1="200" x2="700" y2="200" stroke="#e5e7eb" strokeWidth="1" />
-                
-                {/* Tasks line */}
-                <polyline
-                  fill="none"
-                  stroke="#8b5cf6"
-                  strokeWidth="3"
-                  points="0,140 100,120 200,100 300,85 400,95 500,70 600,60 700,50"
-                />
-                
-                {/* Users line */}
-                <polyline
-                  fill="none"
-                  stroke="#3b82f6"
-                  strokeWidth="3"
-                  points="0,160 100,150 200,130 300,120 400,110 500,100 600,90 700,80"
-                />
-                
-                {/* Data points */}
-                {[350, 600].map((x, i) => {
-                  const y = i === 0 ? 85 : 60;
-                  const color = i === 0 ? "#8b5cf6" : "#8b5cf6";
-                  return (
-                    <circle key={i} cx={x} cy={y} r="4" fill={color} />
-                  );
-                })}
-              </svg>
-              <div className="flex flex-wrap items-center gap-3 md:gap-6 mt-4 text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                  <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Tasks Completed</span>
+            <div className="space-y-3">
+              {/* Graph */}
+              <div className="h-56 md:h-64 relative bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 dark:from-purple-950/20 dark:via-blue-950/20 dark:to-cyan-950/20 rounded-xl p-4">
+                <svg className="w-full h-full" viewBox="0 0 700 220">
+                  {/* Gradient definitions */}
+                  <defs>
+                    <linearGradient id="taskGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#8b5cf6" />
+                      <stop offset="50%" stopColor="#a855f7" />
+                      <stop offset="100%" stopColor="#c084fc" />
+                    </linearGradient>
+                    <linearGradient id="userGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#3b82f6" />
+                      <stop offset="50%" stopColor="#60a5fa" />
+                      <stop offset="100%" stopColor="#93c5fd" />
+                    </linearGradient>
+                    <linearGradient id="taskAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.05" />
+                    </linearGradient>
+                    <linearGradient id="userAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.05" />
+                    </linearGradient>
+                    <filter id="glowEffect">
+                      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  
+                  {/* Grid lines with subtle styling */}
+                  <line x1="50" y1="20" x2="50" y2="180" stroke={darkMode ? "#1f2937" : "#f3f4f6"} strokeWidth="2" />
+                  <line x1="50" y1="180" x2="700" y2="180" stroke={darkMode ? "#1f2937" : "#f3f4f6"} strokeWidth="2" />
+                  {[60, 100, 140].map((y, i) => (
+                    <line key={i} x1="50" y1={y} x2="700" y2={y} stroke={darkMode ? "#1f2937" : "#f3f4f6"} strokeWidth="1" strokeDasharray="5,5" opacity="0.5" />
+                  ))}
+                  
+                  {/* Dynamic activity lines */}
+                  {(() => {
+                    if (activityData.length === 0) return null;
+                    
+                    const maxTasks = Math.max(...activityData.map(d => d.tasks), 1);
+                    const maxUsers = Math.max(...activityData.map(d => d.users), 1);
+                    const totalTasks = activityData.reduce((sum, d) => sum + d.tasks, 0);
+                    
+                    const taskPoints = activityData.map((d, i) => {
+                      const x = 50 + (i / (activityData.length - 1)) * 650;
+                      const y = 180 - (d.tasks / maxTasks) * 140 - 20;
+                      return `${x},${y}`;
+                    }).join(' ');
+                    
+                    const userPoints = activityData.map((d, i) => {
+                      const x = 50 + (i / (activityData.length - 1)) * 650;
+                      const y = 180 - (d.users / maxUsers) * 120 - 20;
+                      return `${x},${y}`;
+                    }).join(' ');
+                    
+                    return (
+                      <>
+                        {/* Task area fill */}
+                        {totalTasks > 0 && (
+                          <polygon
+                            fill="url(#taskAreaGradient)"
+                            points={`50,180 ${taskPoints} 700,180`}
+                          />
+                        )}
+                        
+                        {/* User area fill */}
+                        <polygon
+                          fill="url(#userAreaGradient)"
+                          points={`50,180 ${userPoints} 700,180`}
+                        />
+                        
+                        {/* Tasks line with gradient and glow */}
+                        <polyline
+                          fill="none"
+                          stroke="url(#taskGradient)"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          points={taskPoints}
+                          filter="url(#glowEffect)"
+                        />
+                        
+                        {/* Users line with gradient and glow */}
+                        <polyline
+                          fill="none"
+                          stroke="url(#userGradient)"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          points={userPoints}
+                          filter="url(#glowEffect)"
+                        />
+                        
+                        {/* Data points with enhanced styling */}
+                        {activityData.map((d, i) => {
+                          const x = 50 + (i / (activityData.length - 1)) * 650;
+                          const yTask = 180 - (d.tasks / maxTasks) * 140 - 20;
+                          const yUser = 180 - (d.users / maxUsers) * 120 - 20;
+                          
+                          // Only show points where there's activity
+                          return (
+                            <g key={i}>
+                              {d.tasks > 0 && (
+                                <g>
+                                  <circle cx={x} cy={yTask} r="7" fill="#8b5cf6" opacity="0.2" />
+                                  <circle cx={x} cy={yTask} r="4" fill="#8b5cf6" stroke="white" strokeWidth="2" />
+                                  <circle cx={x} cy={yTask} r="1.5" fill="white" />
+                                </g>
+                              )}
+                              {d.users > 0 && (
+                                <g>
+                                  <circle cx={x} cy={yUser} r="7" fill="#3b82f6" opacity="0.2" />
+                                  <circle cx={x} cy={yUser} r="4" fill="#3b82f6" stroke="white" strokeWidth="2" />
+                                  <circle cx={x} cy={yUser} r="1.5" fill="white" />
+                                </g>
+                              )}
+                            </g>
+                          );
+                        })}
+                      </>
+                    );
+                  })()}
+                </svg>
+              </div>
+
+              {/* Legend and summary */}
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-4 md:gap-6 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full shadow-sm"></div>
+                    <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Tasks Completed</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full shadow-sm"></div>
+                    <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Active Users</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Active Users</span>
-                </div>
+                
+                {activityData.length > 0 && (
+                  <div className={`pt-3 border-t ${darkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Last 30 days total:
+                      </span>
+                      <span className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {activityData.reduce((sum, d) => sum + d.tasks, 0)} tasks completed
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -298,23 +507,18 @@ export default function AdminDashboardPage() {
       {/* Recent Tasks with Search */}
       <Card className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'} mb-4 md:mb-6`}>
         <CardHeader className="p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <div>
-              <CardTitle className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                Task Management
-              </CardTitle>
-              <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
-                Search and manage all tasks in the system
-              </CardDescription>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => router.push("/admin/tasks")} className="w-full sm:w-auto text-xs">
-              View All Tasks
-            </Button>
+          <div className="mb-4">
+            <CardTitle className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              Task Management
+            </CardTitle>
+            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
+              Search and manage all tasks in the system
+            </CardDescription>
           </div>
           
           {/* Search and Filter */}
-          <div className="flex flex-col gap-3">
-            <div className="relative flex-1">
+          <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+            <div className="relative flex-1 lg:max-w-md">
               <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
               <Input
                 placeholder="Search tasks by title..."
@@ -328,7 +532,8 @@ export default function AdminDashboardPage() {
                 variant={filterStatus === "all" ? "default" : "outline"}
                 onClick={() => setFilterStatus("all")}
                 size="sm"
-                className={`gap-1 ${darkMode && filterStatus !== "all" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
+                style={darkMode && filterStatus !== "all" ? { color: 'white', borderColor: 'rgb(55, 65, 81)' } : undefined}
+                className={`gap-1 ${darkMode && filterStatus !== "all" ? 'hover:bg-gray-800' : ''}`}
               >
                 <Filter className="h-3 w-3" />
                 All
@@ -337,7 +542,8 @@ export default function AdminDashboardPage() {
                 variant={filterStatus === "not_picked" ? "default" : "outline"}
                 onClick={() => setFilterStatus("not_picked")}
                 size="sm"
-                className={darkMode && filterStatus !== "not_picked" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}
+                style={darkMode && filterStatus !== "not_picked" ? { color: 'white', borderColor: 'rgb(55, 65, 81)' } : undefined}
+                className={darkMode && filterStatus !== "not_picked" ? 'hover:bg-gray-800' : ''}
               >
                 Not Started
               </Button>
@@ -345,7 +551,8 @@ export default function AdminDashboardPage() {
                 variant={filterStatus === "in_progress" ? "default" : "outline"}
                 onClick={() => setFilterStatus("in_progress")}
                 size="sm"
-                className={darkMode && filterStatus !== "in_progress" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}
+                style={darkMode && filterStatus !== "in_progress" ? { color: 'white', borderColor: 'rgb(55, 65, 81)' } : undefined}
+                className={darkMode && filterStatus !== "in_progress" ? 'hover:bg-gray-800' : ''}
               >
                 In Progress
               </Button>
@@ -353,7 +560,8 @@ export default function AdminDashboardPage() {
                 variant={filterStatus === "completed" ? "default" : "outline"}
                 onClick={() => setFilterStatus("completed")}
                 size="sm"
-                className={darkMode && filterStatus !== "completed" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}
+                style={darkMode && filterStatus !== "completed" ? { color: 'white', borderColor: 'rgb(55, 65, 81)' } : undefined}
+                className={darkMode && filterStatus !== "completed" ? 'hover:bg-gray-800' : ''}
               >
                 Completed
               </Button>
@@ -363,14 +571,38 @@ export default function AdminDashboardPage() {
         <CardContent className="p-4 md:p-6">
           <div className="space-y-2 md:space-y-3">
             {(() => {
-              const filteredTasks = recentTasks.filter((task) => {
-                const matchesSearch = task.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                     task.description?.toLowerCase().includes(searchQuery.toLowerCase());
-                const matchesFilter = filterStatus === "all" || task.status === filterStatus;
-                return matchesSearch && matchesFilter;
-              });
+              // Filter tasks based on search and status
+              let filteredTasks = allTasks;
+              
+              // Apply search filter
+              if (searchQuery.trim()) {
+                filteredTasks = filteredTasks.filter((task) => {
+                  const searchLower = searchQuery.toLowerCase();
+                  return (
+                    task.title?.toLowerCase().includes(searchLower) ||
+                    task.description?.toLowerCase().includes(searchLower) ||
+                    task.assigned_user?.full_name?.toLowerCase().includes(searchLower) ||
+                    task.assigned_user?.email?.toLowerCase().includes(searchLower)
+                  );
+                });
+              }
+              
+              // Apply status filter
+              if (filterStatus !== "all") {
+                filteredTasks = filteredTasks.filter((task) => task.status === filterStatus);
+              }
+              
+              // Sort by created date (newest first)
+              const sortedTasks = filteredTasks
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+              
+              // Calculate pagination
+              const totalPages = Math.ceil(sortedTasks.length / tasksPerPage);
+              const startIndex = (currentPage - 1) * tasksPerPage;
+              const endIndex = startIndex + tasksPerPage;
+              const displayTasks = sortedTasks.slice(startIndex, endIndex);
 
-              if (filteredTasks.length === 0) {
+              if (displayTasks.length === 0) {
                 return (
                   <div className="text-center py-12">
                     <AlertCircle className={`h-12 w-12 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
@@ -384,7 +616,7 @@ export default function AdminDashboardPage() {
                 );
               }
 
-              return filteredTasks.map((task) => (
+              return displayTasks.map((task) => (
                 <div
                   key={task.id}
                   className={`p-3 md:p-4 rounded-lg border transition-colors cursor-pointer ${
@@ -436,7 +668,7 @@ export default function AdminDashboardPage() {
                     {task.description}
                   </p>
                   
-                  <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                  <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs ${darkMode ? 'text-gray-400' : 'text-slate-700'}`}>
                     <div className="flex flex-wrap items-center gap-2 md:gap-4">
                       <span className="flex items-center gap-1 truncate">
                         <Users size={12} />
@@ -448,13 +680,13 @@ export default function AdminDashboardPage() {
                       </span>
                     </div>
                     {task.status === "in_progress" && (
-                      <span className="flex items-center gap-1 text-blue-600">
+                      <span className={`flex items-center gap-1 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
                         <Clock size={12} />
                         Active
                       </span>
                     )}
                     {task.status === "completed" && (
-                      <span className="flex items-center gap-1 text-green-600">
+                      <span className={`flex items-center gap-1 ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
                         <CheckCircle2 size={12} />
                         Done
                       </span>
@@ -463,6 +695,124 @@ export default function AdminDashboardPage() {
                 </div>
               ));
             })()}
+          </div>
+          
+          {/* Pagination Controls */}
+          {(() => {
+            let filteredTasks = allTasks;
+            
+            if (searchQuery.trim()) {
+              filteredTasks = filteredTasks.filter((task) => {
+                const searchLower = searchQuery.toLowerCase();
+                return (
+                  task.title?.toLowerCase().includes(searchLower) ||
+                  task.description?.toLowerCase().includes(searchLower) ||
+                  task.assigned_user?.full_name?.toLowerCase().includes(searchLower) ||
+                  task.assigned_user?.email?.toLowerCase().includes(searchLower)
+                );
+              });
+            }
+            
+            if (filterStatus !== "all") {
+              filteredTasks = filteredTasks.filter((task) => task.status === filterStatus);
+            }
+            
+            const totalPages = Math.ceil(filteredTasks.length / tasksPerPage);
+            
+            if (totalPages <= 1) return null;
+            
+            return (
+              <div className={`mt-4 pt-4 border-t ${darkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Showing {((currentPage - 1) * tasksPerPage) + 1} to {Math.min(currentPage * tasksPerPage, filteredTasks.length)} of {filteredTasks.length} tasks
+                  </p>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className={`text-xs ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800 disabled:opacity-50' : ''}`}
+                    >
+                      Previous
+                    </Button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                        const isFirstPage = page === 1;
+                        const isLastPage = page === totalPages;
+                        const isCurrentPage = page === currentPage;
+                        const isNearCurrent = page >= currentPage - 1 && page <= currentPage + 1;
+                        
+                        // Always show: first page, last page, current page, and pages around current
+                        if (isFirstPage || isLastPage || isCurrentPage || isNearCurrent) {
+                          // Add ellipsis before this page if there's a gap
+                          const shouldShowEllipsisBefore = 
+                            !isFirstPage && 
+                            page > 2 && 
+                            page === currentPage - 1 && 
+                            currentPage > 3;
+                          
+                          // Add ellipsis after current range before last page
+                          const shouldShowEllipsisAfter = 
+                            !isLastPage && 
+                            page < totalPages - 1 && 
+                            page === currentPage + 1 && 
+                            currentPage < totalPages - 2;
+                          
+                          return (
+                            <React.Fragment key={page}>
+                              {shouldShowEllipsisBefore && (
+                                <span className={`text-xs px-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>...</span>
+                              )}
+                              <Button
+                                variant={isCurrentPage ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className={`text-xs w-8 h-8 p-0 ${
+                                  darkMode && !isCurrentPage 
+                                    ? 'text-white border-gray-700 hover:bg-gray-800' 
+                                    : ''
+                                }`}
+                              >
+                                {page}
+                              </Button>
+                              {shouldShowEllipsisAfter && (
+                                <span className={`text-xs px-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>...</span>
+                              )}
+                            </React.Fragment>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`text-xs ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800 disabled:opacity-50' : ''}`}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+          
+          {/* View All Tasks Button */}
+          <div className="mt-4 pt-4">
+            <Button 
+              variant="outline" 
+              className={`w-full text-sm ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800' : ''}`}
+              onClick={() => router.push("/admin/tasks")}
+            >
+              View All Tasks
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -478,14 +828,14 @@ export default function AdminDashboardPage() {
               Recently added and active users in the system
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={() => router.push("/admin/users")} className="w-full sm:w-auto text-xs">
+          <Button variant="outline" size="sm" onClick={() => router.push("/admin/users")} className={`w-full sm:w-auto text-xs ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800' : ''}`}>
             View All
           </Button>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
           <div className="space-y-2 md:space-y-3">
             {recentUsers.length === 0 ? (
-              <div className={`text-center py-8 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+              <div className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 No users found
               </div>
             ) : (
@@ -500,7 +850,7 @@ export default function AdminDashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className={`font-medium text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{userItem.full_name || "No Name"}</h3>
-                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} truncate`}>{userItem.email}</p>
+                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-blue-700'} truncate`}>{userItem.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -524,7 +874,7 @@ export default function AdminDashboardPage() {
           <div className="mt-3 md:mt-4 text-center">
             <Button 
               variant="outline" 
-              className="w-full text-sm"
+              className={`w-full text-sm ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800' : ''}`}
               onClick={() => router.push("/admin/users")}
             >
               Manage All Users

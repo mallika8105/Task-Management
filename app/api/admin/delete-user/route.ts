@@ -104,21 +104,21 @@ export async function POST(request: Request) {
       
       console.log(`API: User with ID ${userToDelete.id} deleted from Supabase Auth.`);
 
-      // Delete from public.users table
-      console.log("API: Deleting user from public.users table with email:", email);
-      const { error: deleteUserTableError } = await adminSupabase
+      // Soft delete from public.users table (mark as inactive instead of deleting)
+      console.log("API: Marking user as inactive in public.users table with email:", email);
+      const { error: updateUserTableError } = await adminSupabase
         .from("users")
-        .delete()
+        .update({ status: 'inactive' })
         .eq("email", email);
       
-      if (deleteUserTableError) {
-        console.error("API: Error deleting user from public.users table:", deleteUserTableError);
+      if (updateUserTableError) {
+        console.error("API: Error updating user status in public.users table:", updateUserTableError);
         return NextResponse.json({ 
-          error: deleteUserTableError.message || "Failed to delete user from database." 
+          error: updateUserTableError.message || "Failed to update user status in database." 
         }, { status: 500 });
       }
       
-      console.log(`API: User with email ${email} deleted successfully from public.users table.`);
+      console.log(`API: User with email ${email} marked as inactive successfully in public.users table.`);
 
       return NextResponse.json({ 
         message: `User with email ${email} deleted successfully.` 

@@ -159,3 +159,23 @@ body {
   color: hsl(var(--card-foreground));
   border-color: hsl(var(--border));
 }
+
+/* Hide Next.js development indicators (compiling/rendering messages) */
+#webpack-dev-server-client-overlay,
+#webpack-dev-server-client-overlay-div,
+nextjs-portal {
+  display: none !important;
+}
+
+/* Hide Next.js build indicator */
+.__next-build-watcher {
+  display: none !important;
+}
+
+/* Hide all Next.js development toasts and notifications */
+[data-nextjs-toast],
+[data-nextjs-dialog-overlay],
+.__next-dev-overlay,
+.__next-dev-error-overlay {
+  display: none !important;
+}

@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { getCurrentUser, signOut } from "@/lib/supabase/auth-helpers";
-import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
-import { Badge } from "@/app/components/ui/badge";
+import NotificationPanel from "@/app/components/NotificationPanel";
+import Image from "next/image";
 import {
   SidebarProvider,
   Sidebar,
@@ -17,8 +17,6 @@ import {
   SidebarMenuItem,
 } from "@/app/components/ui/sidebar";
 import {
-  Search,
-  Bell,
   LogOut,
   LayoutDashboard,
   ListTodo,
@@ -33,18 +31,9 @@ export default function EmployeeLayout({
 }) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [tasks, setTasks] = useState<any[]>([]);
   const [darkMode, setDarkMode] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
   const pathname = usePathname();
-
-  // Effect to update searchQuery when URL changes
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setSearchQuery(params.get("search") || "");
-  }, [pathname]);
 
   // Load dark mode preference
   useEffect(() => {
@@ -66,40 +55,43 @@ export default function EmployeeLayout({
     }
   };
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await getCurrentUser();
-        if (!currentUser) {
-          router.push("/auth/login");
-          return;
-        }
-        if (currentUser.role === "admin") {
-          router.push("/admin/dashboard");
-          return;
-        }
-        setUser(currentUser);
-        
-        // Fetch assigned tasks
-        const { data: tasksData } = await supabase
-          .from("tasks")
-          .select("*")
-          .eq("assigned_to", currentUser.id)
-          .order("created_at", { ascending: false })
-          .limit(10);
-        
-        if (tasksData) {
-          setTasks(tasksData);
-        }
-      } catch (err) {
-        console.error("Error fetching user:", err);
+  const fetchUser = async () => {
+    try {
+      const currentUser = await getCurrentUser();
+      if (!currentUser) {
         router.push("/auth/login");
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
+      if (currentUser.role === "admin") {
+        router.push("/admin/dashboard");
+        return;
+      }
+      setUser(currentUser);
+    } catch (err) {
+      console.error("Error fetching user:", err);
+      router.push("/auth/login");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchUser();
   }, [router]);
+
+  // Listen for avatar upload events to refresh user data
+  useEffect(() => {
+    const handleAvatarUpload = (event: any) => {
+      if (event.detail?.userId === user?.id) {
+        fetchUser(); // Refresh user data to get updated profile image
+      }
+    };
+
+    window.addEventListener('avatarUploaded', handleAvatarUpload);
+    return () => {
+      window.removeEventListener('avatarUploaded', handleAvatarUpload);
+    };
+  }, [user?.id]);
 
   const handleSignOut = async () => {
     try {
@@ -112,10 +104,11 @@ export default function EmployeeLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
+        <div className="flex justify-center gap-2 text-black">
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.2s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.4s_infinite]">.</span>
         </div>
       </div>
     );
@@ -133,11 +126,11 @@ export default function EmployeeLayout({
         {/* Sidebar */}
         <Sidebar>
           <SidebarHeader>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 h-8">
               <div className="w-8 h-8 bg-gray-900 rounded flex items-center justify-center">
                 <ListTodo size={18} className="text-white" />
               </div>
-              <span className={`font-semibold text-sm ${darkMode ? 'text-white' : ''}`}>
+              <span className={`font-semibold text-sm leading-8 ${darkMode ? 'text-white' : ''}`}>
                 Task Manager
               </span>
             </div>
@@ -181,10 +174,22 @@ export default function EmployeeLayout({
           <SidebarFooter>
             <div className="space-y-2">
               <div className="flex items-center gap-3 p-2">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-                  {user.user_metadata?.full_name?.charAt(0)?.toUpperCase() ||
-                    user.email?.charAt(0)?.toUpperCase()}
-                </div>
+                {user.profile_image ? (
+                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-600">
+                    <Image
+                      src={user.profile_image}
+                      alt="Profile"
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                    {user.user_metadata?.full_name?.charAt(0)?.toUpperCase() ||
+                      user.email?.charAt(0)?.toUpperCase()}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm font-medium truncate ${
                     darkMode ? 'text-white' : 'text-gray-900'
@@ -216,56 +221,14 @@ export default function EmployeeLayout({
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Top Bar */}
-          <header className={`border-b px-6 py-4 ${
+          <header className={`border-b px-6 h-16 flex items-center ${
             darkMode 
               ? 'bg-black border-gray-800' 
               : 'bg-white border-gray-200'
           }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 flex-1">
-                <div className="relative flex-1 max-w-md">
-                  <Search
-                    className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-                      darkMode ? 'text-gray-500' : 'text-gray-400'
-                    }`}
-                    size={18}
-                  />
-                  <Input
-                    placeholder="Search tasks..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      // Update URL query parameter
-                      const params = new URLSearchParams(window.location.search);
-                      if (e.target.value) {
-                        params.set("search", e.target.value);
-                      } else {
-                        params.delete("search");
-                      }
-                      router.replace(`${pathname}?${params.toString()}`);
-                    }}
-                    className={`pl-10 ${
-                      darkMode
-                        ? 'bg-gray-900 border-gray-800 text-white placeholder:text-gray-500'
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  />
-                </div>
-              </div>
+            <div className="flex items-center justify-end w-full">
               <div className="flex items-center gap-3">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={`relative ${darkMode ? 'text-gray-300 hover:text-white hover:bg-gray-800' : ''}`}
-                  onClick={() => setShowNotifications(!showNotifications)}
-                >
-                  <Bell size={20} className={darkMode ? 'text-gray-300' : ''} />
-                  {tasks.length > 0 && (
-                    <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-                      {tasks.length}
-                    </span>
-                  )}
-                </Button>
+                <NotificationPanel userId={user.id} darkMode={darkMode} />
                 <Button 
                   variant="ghost" 
                   size="icon"
@@ -280,106 +243,8 @@ export default function EmployeeLayout({
           </header>
 
           {/* Page Content */}
-          <main className="flex-1 overflow-y-auto relative">
+          <main className="flex-1 overflow-y-auto">
             {children}
-            
-            {/* Notification Panel */}
-            {showNotifications && (
-              <div className={`absolute top-0 right-0 h-full w-96 border-l shadow-lg z-50 overflow-y-auto ${
-                darkMode 
-                  ? 'bg-black border-gray-800' 
-                  : 'bg-white border-gray-200'
-              }`}>
-                <div className={`sticky top-0 border-b p-4 ${
-                  darkMode
-                    ? 'bg-black border-gray-800'
-                    : 'bg-white border-gray-200'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : ''}`}>
-                      Assigned Tasks
-                    </h2>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className={darkMode ? 'text-gray-300 hover:text-white hover:bg-gray-800' : ''}
-                      onClick={() => setShowNotifications(false)}
-                    >
-                      ✕
-                    </Button>
-                  </div>
-                  <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'} assigned to you
-                  </p>
-                </div>
-                
-                <div className="p-4 space-y-3">
-                  {tasks.length === 0 ? (
-                    <p className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      No tasks assigned yet
-                    </p>
-                  ) : (
-                    tasks.map((task) => (
-                      <div
-                        key={task.id}
-                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                          darkMode
-                            ? 'border-gray-800 hover:bg-gray-900'
-                            : 'border-gray-200 hover:bg-gray-50'
-                        }`}
-                        onClick={() => {
-                          router.push(`/mytasks/${task.id}`);
-                          setShowNotifications(false);
-                        }}
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className={`font-medium flex-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {task.title}
-                          </h3>
-                          <Badge 
-                            variant={
-                              task.priority === "high" 
-                                ? "destructive" 
-                                : task.priority === "medium"
-                                ? "default"
-                                : "secondary"
-                            }
-                            className="ml-2"
-                          >
-                            {task.priority}
-                          </Badge>
-                        </div>
-                        
-                        <p className={`text-sm line-clamp-2 mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                          {task.description}
-                        </p>
-                        
-                        <div className={`flex items-center justify-between text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          <span className={`px-2 py-1 rounded ${
-                            darkMode
-                              ? task.status === "completed"
-                                ? "bg-green-900 text-green-200"
-                                : task.status === "in_progress"
-                                ? "bg-blue-900 text-blue-200"
-                                : "bg-gray-800 text-gray-300"
-                              : task.status === "completed"
-                              ? "bg-green-100 text-green-800"
-                              : task.status === "in_progress"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}>
-                            {task.status.replace("_", " ")}
-                          </span>
-                          <span>
-                            Due: {new Date(task.deadline).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
           </main>
         </div>
       </div>

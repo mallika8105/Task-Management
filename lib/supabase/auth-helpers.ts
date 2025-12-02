@@ -76,10 +76,10 @@ export async function getCurrentUser() {
       return null;
     }
 
-    // Fetch the user's role from the public.users table
+    // Fetch the user's role and profile_image from the public.users table
     const { data: userProfile, error: profileError } = await supabase
       .from('users')
-      .select('role')
+      .select('role, profile_image')
       .eq('id', user.id)
       .single();
 
@@ -91,8 +91,8 @@ export async function getCurrentUser() {
       return null;
     }
 
-    // Combine the auth user object with the role from the public.users table
-    return { ...user, role: userProfile.role };
+    // Combine the auth user object with the role and profile_image from the public.users table
+    return { ...user, role: userProfile.role, profile_image: userProfile.profile_image };
   } catch (error) {
     console.error("Unexpected error in getCurrentUser:", error);
     return null;

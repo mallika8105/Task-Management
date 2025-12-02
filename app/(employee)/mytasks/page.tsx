@@ -56,38 +56,8 @@ export default function MyTasksPage() {
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [darkMode, setDarkMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  
-  // Read search query directly from URL - this is the source of truth
-  const urlSearch = searchParams.get("search") || "";
-  
-  // Use URL search directly for filtering (no local state needed for filtering)
-  const [localSearchInput, setLocalSearchInput] = useState(urlSearch);
-  const debouncedLocalSearch = useDebounce(localSearchInput, 300);
-
-  // Sync local input with URL when URL changes (from header search)
-  useEffect(() => {
-    const newUrlSearch = searchParams.get("search") || "";
-    console.log("🔍 URL search parameter:", newUrlSearch);
-    setLocalSearchInput(newUrlSearch);
-  }, [searchParams]);
-
-  // Update URL when debounced local search changes (from local search bar)
-  useEffect(() => {
-    const currentSearch = searchParams.get('search') || "";
-    
-    if (debouncedLocalSearch !== currentSearch) {
-      const newParams = new URLSearchParams(searchParams.toString());
-      if (debouncedLocalSearch) {
-        newParams.set('search', debouncedLocalSearch);
-      } else {
-        newParams.delete('search');
-      }
-      router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
-    }
-  }, [debouncedLocalSearch, pathname, router, searchParams]);
 
   useEffect(() => {
     const checkDarkMode = () => {
@@ -169,26 +139,17 @@ export default function MyTasksPage() {
     }
   };
 
-  // Use URL search directly for filtering - this ensures immediate response
+  // Filter tasks based on search query and status filter
   const filteredTasks = tasks.filter((task) => {
-    const searchLower = urlSearch.toLowerCase().trim();
+    const searchLower = searchQuery.toLowerCase().trim();
     const matchesSearch = !searchLower || 
       task.title.toLowerCase().includes(searchLower) ||
       task.description.toLowerCase().includes(searchLower);
     const matchesFilter =
       filterStatus === "all" || task.status === filterStatus;
     
-    console.log(`📝 Task "${task.title}" - Search: "${urlSearch}" - Match: ${matchesSearch}`);
     return matchesSearch && matchesFilter;
   });
-
-  // Debug logging
-  useEffect(() => {
-    console.log("🔎 Active search query from URL:", urlSearch);
-    console.log("📊 Total tasks:", tasks.length);
-    console.log("✅ Filtered tasks:", filteredTasks.length);
-    console.log("🎯 Tasks:", filteredTasks.map(t => t.title));
-  }, [urlSearch, tasks.length, filteredTasks.length, filteredTasks]);
 
   const tasksByStatus = {
     not_picked: filteredTasks.filter((t) => t.status === "not_picked"),
@@ -199,9 +160,10 @@ export default function MyTasksPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto ${darkMode ? 'border-white' : 'border-gray-900'}`}></div>
-          <p className={`mt-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading your tasks...</p>
+        <div className={`flex justify-center gap-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.2s_infinite]">.</span>
+          <span className="text-4xl animate-[bounce_1s_ease-in-out_0.4s_infinite]">.</span>
         </div>
       </div>
     );
@@ -346,46 +308,66 @@ export default function MyTasksPage() {
           </Card>
         </div>
 
-        {/* Filter Buttons Only - Search is in header */}
-        <Card className={`shadow-sm ${darkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'}`}>
-          <CardContent className="p-4 md:p-6">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={filterStatus === "all" ? "default" : "outline"}
-                onClick={() => setFilterStatus("all")}
-                className={`gap-1 text-sm ${darkMode && filterStatus !== "all" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
-              >
-                <Filter className="h-4 w-4" />
-                All
-              </Button>
-              <Button
-                variant={
-                  filterStatus === "not_picked" ? "default" : "outline"
-                }
-                onClick={() => setFilterStatus("not_picked")}
-                className={`text-sm ${darkMode && filterStatus !== "not_picked" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
-              >
-                Not Started
-              </Button>
-              <Button
-                variant={
-                  filterStatus === "in_progress" ? "default" : "outline"
-                }
-                onClick={() => setFilterStatus("in_progress")}
-                className={`text-sm ${darkMode && filterStatus !== "in_progress" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
-              >
-                In Progress
-              </Button>
-              <Button
-                variant={filterStatus === "completed" ? "default" : "outline"}
-                onClick={() => setFilterStatus("completed")}
-                className={`text-sm ${darkMode && filterStatus !== "completed" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
-              >
-                Completed
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Search and Filter Section */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          {/* Search on the left */}
+          <div className="relative w-full sm:max-w-md">
+            <Search
+              className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+                darkMode ? 'text-gray-500' : 'text-gray-400'
+              }`}
+              size={18}
+            />
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                darkMode
+                  ? 'bg-gray-900 border-gray-800 text-white placeholder:text-gray-500'
+                  : 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400'
+              }`}
+            />
+          </div>
+
+          {/* Filter buttons on the right */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={filterStatus === "all" ? "default" : "outline"}
+              onClick={() => setFilterStatus("all")}
+              className={`gap-1 text-sm ${darkMode && filterStatus !== "all" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
+            >
+              <Filter className="h-4 w-4" />
+              All
+            </Button>
+            <Button
+              variant={
+                filterStatus === "not_picked" ? "default" : "outline"
+              }
+              onClick={() => setFilterStatus("not_picked")}
+              className={`text-sm ${darkMode && filterStatus !== "not_picked" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
+            >
+              Not Started
+            </Button>
+            <Button
+              variant={
+                filterStatus === "in_progress" ? "default" : "outline"
+              }
+              onClick={() => setFilterStatus("in_progress")}
+              className={`text-sm ${darkMode && filterStatus !== "in_progress" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
+            >
+              In Progress
+            </Button>
+            <Button
+              variant={filterStatus === "completed" ? "default" : "outline"}
+              onClick={() => setFilterStatus("completed")}
+              className={`text-sm ${darkMode && filterStatus !== "completed" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
+            >
+              Completed
+            </Button>
+          </div>
+        </div>
 
         {/* Tasks Table */}
         <Card className={`shadow-sm ${darkMode ? 'bg-black border-gray-800' : 'border-gray-200'}`}>
@@ -400,7 +382,7 @@ export default function MyTasksPage() {
                   No tasks found
                 </h3>
                 <p className={`text-sm md:text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {urlSearch ? `No tasks match "${urlSearch}"` : "You don't have any tasks assigned yet."}
+                  {searchQuery ? `No tasks match "${searchQuery}"` : "You don't have any tasks assigned yet."}
                 </p>
               </div>
             ) : (
