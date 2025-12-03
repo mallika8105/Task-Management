@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { notifyUserSignup } from "@/lib/supabase/notification-helpers";
 
 // Create a Supabase client with the service role key for admin operations
 const supabaseAdmin = createClient(
@@ -43,22 +44,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ensure user entry exists in public.users table
+    // The trigger handle_new_user() will automatically create the user in public.users
+    // So we don't need to manually insert here
+    
     if (authData.user) {
-      const { error: insertError } = await supabaseAdmin
-        .from("users")
-        .insert([
-          {
-            id: authData.user.id,
-            email: email,
-            full_name: fullName,
-            role: role || "employee",
-          },
-        ]);
+      // Notify all admins about the new user signup
+      try {
+        const { data: admins, error: adminError } = await supabaseAdmin
+          .from("users")
+          .select("id")
+          .eq("role", "admin");
 
-      if (insertError) {
-        console.error("Error creating user in public.users:", insertError);
-        // Don't fail the whole operation if this fails
+        if (!adminError && admins && admins.length > 0) {
+          // Create notification for each admin
+          for (const admin of admins) {
+            await notifyUserSignup(
+              admin.id,
+              authData.user.id,
+              fullName,
+              email
+            );
+          }
+        }
+      } catch (notificationError) {
+        console.error("Error creating admin notifications:", notificationError);
+        // Don't fail the signup if notification creation fails
       }
 
       // Generate a session for the user so they can log in immediately

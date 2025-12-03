@@ -118,6 +118,8 @@ export default function NotificationPanel({
         return "📋";
       case "task_completed":
         return "✅";
+      case "task_in_progress":
+        return "🚀";
       case "comment_added":
         return "💬";
       case "task_updated":

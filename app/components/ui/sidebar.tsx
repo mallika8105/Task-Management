@@ -61,7 +61,7 @@ export function Sidebar({
     <aside
       className={cn(
         "flex flex-col h-screen border-r transition-all duration-300",
-        isDark ? "bg-black border-teal-700" : "bg-white border-teal-300",
+        isDark ? "bg-black border-gray-800" : "bg-white border-gray-200",
         collapsed ? "w-16" : "w-64",
         className
       )}
@@ -96,7 +96,7 @@ export function SidebarHeader({
   return (
     <div className={cn(
       "px-4 py-4 border-b h-16 flex items-center",
-      isDark ? "border-teal-700" : "border-teal-300",
+      isDark ? "border-gray-800" : "border-gray-200",
       className
     )}>
       {children}
@@ -143,7 +143,7 @@ export function SidebarFooter({
   return (
     <div className={cn(
       "p-4 border-t",
-      isDark ? "border-teal-700" : "border-teal-300",
+      isDark ? "border-gray-800" : "border-gray-200",
       className
     )}>
       {children}

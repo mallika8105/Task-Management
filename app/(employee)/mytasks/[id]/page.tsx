@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { getCurrentUser } from "@/lib/supabase/auth-helpers";
-import { notifyNewComment, notifyTaskCompletion } from "@/lib/supabase/notification-helpers";
+import { notifyNewComment, notifyTaskCompletion, notifyTaskInProgress, notifyTaskUpdate } from "@/lib/supabase/notification-helpers";
 import {
   Card,
   CardContent,
@@ -186,14 +186,32 @@ export default function TaskDetailPage() {
 
       if (error) throw error;
 
-      // Notify admin if task is marked as completed
-      if (status === "completed" && task.created_by) {
-        await notifyTaskCompletion(
-          task.id,
-          task.created_by,
-          user.id,
-          task.title
-        );
+      // Notify admin for all status changes
+      if (task.created_by && status !== task.status) {
+        if (status === "completed") {
+          await notifyTaskCompletion(
+            task.id,
+            task.created_by,
+            user.id,
+            task.title
+          );
+        } else if (status === "in_progress") {
+          await notifyTaskInProgress(
+            task.id,
+            task.created_by,
+            user.id,
+            task.title
+          );
+        } else if (status === "not_picked") {
+          // Notify for not picked status
+          await notifyTaskUpdate(
+            task.id,
+            task.created_by,
+            user.id,
+            task.title,
+            "status changed to Not Picked"
+          );
+        }
       }
 
       alert("Task status updated successfully!");
@@ -353,20 +371,13 @@ export default function TaskDetailPage() {
                               : 'bg-gray-50 text-gray-900 border-gray-200 dark:bg-gray-800 dark:text-white dark:border-gray-700'
                           }`}
                         >
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              isOwnComment ? 'bg-blue-600' : 'bg-blue-100 dark:bg-blue-800'
-                            }`}>
-                              <User size={16} className={isOwnComment ? 'text-white' : 'text-blue-600 dark:text-blue-200'} />
-                            </div>
-                            <div>
-                              <p className={`text-sm font-medium ${isOwnComment ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                                {isOwnComment ? 'You' : (comment.user?.full_name || "Unknown")}
-                              </p>
-                              <p className={`text-xs ${isOwnComment ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
-                                {new Date(comment.created_at).toLocaleString()}
-                              </p>
-                            </div>
+                          <div className="mb-2">
+                            <p className={`text-sm font-medium ${isOwnComment ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                              {isOwnComment ? 'You' : (comment.user?.full_name || "Unknown")}
+                            </p>
+                            <p className={`text-xs ${isOwnComment ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                              {new Date(comment.created_at).toLocaleString()}
+                            </p>
                           </div>
                           <p className={`text-sm whitespace-pre-wrap ${isOwnComment ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                             {comment.comment}

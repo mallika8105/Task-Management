@@ -477,9 +477,9 @@ export default function AdminTaskDetailPage() {
                     <SelectValue placeholder="Select employee" />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
+                    {users.filter(user => !user.status || user.status === 'active').map((user) => (
                       <SelectItem key={user.id} value={user.id}>
-                        {user.full_name}{user.status === 'inactive' ? ' (inactive)' : ''} ({user.email})
+                        {user.full_name} ({user.email})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -503,44 +503,52 @@ export default function AdminTaskDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Comments List */}
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className="space-y-4 max-h-96 overflow-y-auto px-1 py-2">
                 {comments.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                    No comments yet. Add the first comment!
-                  </p>
+                  <div className="text-center py-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 mb-3">
+                      <FileText size={24} className="text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      No comments yet. Start the conversation!
+                    </p>
+                  </div>
                 ) : (
                   comments.map((comment) => {
                     const isOwnComment = comment.user_id === currentUserId;
                     return (
                       <div
                         key={comment.id}
-                        className={`flex ${isOwnComment ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${isOwnComment ? 'justify-end' : 'justify-start'} mb-4`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-lg p-3 border ${
+                          className={`relative rounded-2xl p-4 shadow-lg max-w-[85%] ${
                             isOwnComment
-                              ? 'bg-blue-500 text-white border-blue-600'
-                              : 'bg-gray-50 text-gray-900 border-gray-200 dark:bg-gray-800 dark:text-white dark:border-gray-700'
+                              ? 'bg-gradient-to-br from-purple-500 via-purple-600 to-pink-600 text-white rounded-tr-sm'
+                              : 'bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900 border border-gray-200 dark:from-gray-800 dark:to-gray-900 dark:text-white dark:border-gray-700 rounded-tl-sm'
                           }`}
                         >
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              isOwnComment ? 'bg-blue-600' : 'bg-blue-100'
-                            }`}>
-                              <span className={`text-sm font-medium ${isOwnComment ? 'text-white' : 'text-blue-600'}`}>
-                                {isOwnComment ? 'A' : (comment.user?.full_name?.charAt(0) || 'U')}
-                              </span>
-                            </div>
-                            <div>
-                              <p className={`text-sm font-medium ${isOwnComment ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                                {isOwnComment ? 'You' : (comment.user?.full_name || "Unknown")}
-                              </p>
-                              <p className={`text-xs ${isOwnComment ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
-                                {new Date(comment.created_at).toLocaleString()}
-                              </p>
-                            </div>
+                          <div className="mb-2">
+                            <p className={`text-sm font-semibold ${isOwnComment ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                              {isOwnComment ? 'You' : (comment.user?.full_name || "Unknown User")}
+                            </p>
+                            <p className={`text-xs mt-0.5 ${isOwnComment ? 'text-purple-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                              {new Date(comment.created_at).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
+                            </p>
                           </div>
-                          <p className={`text-sm whitespace-pre-wrap ${isOwnComment ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                          
+                          <p className={`text-sm leading-relaxed whitespace-pre-wrap ${
+                            isOwnComment 
+                              ? 'text-white' 
+                              : 'text-gray-800 dark:text-gray-200'
+                          }`}>
                             {comment.comment}
                           </p>
                         </div>

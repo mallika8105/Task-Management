@@ -57,6 +57,26 @@ export default function LoginPage() {
           // Mark invitation as accepted after successful signup/login
           await acceptInvitation(email, user.id);
 
+          // Send login notification to admins (only for non-admin users)
+          if (user.role !== 'admin') {
+            try {
+              await fetch('/api/auth/login-notification', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  userId: user.id,
+                  userName: user.user_metadata?.full_name || email,
+                  userEmail: email,
+                }),
+              });
+            } catch (notifErr) {
+              // Log error but don't block login
+              console.error('Failed to send login notification:', notifErr);
+            }
+          }
+
           if (user.role === 'admin') {
             router.push("/admin/dashboard");
           } else {

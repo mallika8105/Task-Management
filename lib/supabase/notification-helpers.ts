@@ -4,7 +4,7 @@ export interface Notification {
   id: string;
   recipient_id: string;
   sender_id: string | null;
-  type: 'task_assigned' | 'task_completed' | 'comment_added' | 'task_updated' | 'message_sent' | 'pr_raised';
+  type: 'task_assigned' | 'task_completed' | 'task_in_progress' | 'comment_added' | 'task_updated' | 'message_sent' | 'pr_raised' | 'user_signup' | 'user_login';
   title: string;
   message: string;
   related_task_id: string | null;
@@ -106,41 +106,37 @@ export async function getUnreadNotificationCount(userId: string) {
 }
 
 /**
- * Mark notification as read
+ * Mark notification as read (deletes the notification)
  */
 export async function markNotificationAsRead(notificationId: string) {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("notifications")
-      .update({ is_read: true })
-      .eq("id", notificationId)
-      .select()
-      .single();
+      .delete()
+      .eq("id", notificationId);
 
     if (error) throw error;
-    return { data, error: null };
+    return { data: null, error: null };
   } catch (error) {
-    console.error("Error marking notification as read:", error);
+    console.error("Error deleting notification:", error);
     return { data: null, error };
   }
 }
 
 /**
- * Mark all notifications as read for a user
+ * Mark all notifications as read for a user (deletes all notifications)
  */
 export async function markAllNotificationsAsRead(userId: string) {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("notifications")
-      .update({ is_read: true })
-      .eq("recipient_id", userId)
-      .eq("is_read", false)
-      .select();
+      .delete()
+      .eq("recipient_id", userId);
 
     if (error) throw error;
-    return { data, error: null };
+    return { data: null, error: null };
   } catch (error) {
-    console.error("Error marking all notifications as read:", error);
+    console.error("Error deleting all notifications:", error);
     return { data: null, error };
   }
 }
@@ -241,6 +237,96 @@ export async function notifyTaskUpdate(
     type: "task_updated",
     title: "Task Updated",
     message: `Task "${taskTitle}" has been updated: ${updateDetails}`,
+    relatedTaskId: taskId,
+  });
+}
+
+/**
+ * Helper to create notification for user signup
+ */
+export async function notifyUserSignup(
+  adminId: string,
+  newUserId: string,
+  newUserName: string,
+  newUserEmail: string
+) {
+  return createNotification({
+    recipientId: adminId,
+    senderId: newUserId,
+    type: "user_signup",
+    title: "New User Signup",
+    message: `${newUserName} (${newUserEmail}) has accepted the invitation and signed up`,
+    relatedTaskId: null,
+  });
+}
+
+/**
+ * Helper to create notification for user login
+ * Prevents duplicate notifications within 1 hour and cleans up old login notifications
+ */
+export async function notifyUserLogin(
+  adminId: string,
+  userId: string,
+  userName: string,
+  userEmail: string
+) {
+  try {
+    // Check for existing login notification from this user to this admin within the last hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    
+    const { data: existingNotifications } = await supabase
+      .from("notifications")
+      .select("id")
+      .eq("recipient_id", adminId)
+      .eq("sender_id", userId)
+      .eq("type", "user_login")
+      .gte("created_at", oneHourAgo);
+
+    // If a recent notification exists, skip creating a new one
+    if (existingNotifications && existingNotifications.length > 0) {
+      console.log(`Skipping duplicate login notification for user ${userId} to admin ${adminId}`);
+      return { data: null, error: null };
+    }
+
+    // Delete old login notifications from this user to this admin (older than 1 hour)
+    await supabase
+      .from("notifications")
+      .delete()
+      .eq("recipient_id", adminId)
+      .eq("sender_id", userId)
+      .eq("type", "user_login")
+      .lt("created_at", oneHourAgo);
+
+    // Create new notification
+    return createNotification({
+      recipientId: adminId,
+      senderId: userId,
+      type: "user_login",
+      title: "User Login",
+      message: `${userName} (${userEmail}) has logged in successfully`,
+      relatedTaskId: null,
+    });
+  } catch (error) {
+    console.error("Error in notifyUserLogin:", error);
+    return { data: null, error };
+  }
+}
+
+/**
+ * Helper to create notification for task in progress
+ */
+export async function notifyTaskInProgress(
+  taskId: string,
+  adminId: string,
+  startedById: string,
+  taskTitle: string
+) {
+  return createNotification({
+    recipientId: adminId,
+    senderId: startedById,
+    type: "task_in_progress",
+    title: "Task Started",
+    message: `Task "${taskTitle}" has been marked as in progress`,
     relatedTaskId: taskId,
   });
 }

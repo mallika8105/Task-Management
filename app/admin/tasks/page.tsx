@@ -546,7 +546,7 @@ export default function AdminTasksPage() {
                       <SelectValue placeholder="Select employee" />
                     </SelectTrigger>
                     <SelectContent>
-                      {users.map((user) => (
+                      {users.filter(user => !user.status || user.status === 'active').map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.full_name}
                         </SelectItem>
@@ -663,7 +663,7 @@ export default function AdminTasksPage() {
                         <SelectValue placeholder="Select employee" />
                       </SelectTrigger>
                       <SelectContent>
-                        {users.map((user) => (
+                        {users.filter(user => !user.status || user.status === 'active').map((user) => (
                           <SelectItem key={user.id} value={user.id}>
                             {user.full_name}
                           </SelectItem>
@@ -719,7 +719,7 @@ export default function AdminTasksPage() {
               </TableHeader>
               <TableBody>
                 {tasks.map((task) => (
-                  <TableRow key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b border-teal-300 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500">
+                  <TableRow key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b border-gray-200 dark:border-gray-800">
                     <TableCell 
                       className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer text-sm hover:underline"
                       onClick={() => router.push(`/admin/tasks/${task.id}`)}
@@ -760,13 +760,13 @@ export default function AdminTasksPage() {
                       </span>
                     </TableCell>
                     <TableCell 
-                      className="cursor-pointer text-sm text-slate-800 dark:text-slate-100 font-medium"
+                      className="cursor-pointer text-sm text-gray-900 dark:text-slate-100 font-medium"
                       onClick={() => router.push(`/admin/tasks/${task.id}`)}
                     >
                       {task.deadline}
                     </TableCell>
                     <TableCell 
-                      className="cursor-pointer text-sm text-slate-800 dark:text-slate-100 font-medium"
+                      className="cursor-pointer text-sm text-gray-900 dark:text-slate-100 font-medium"
                       onClick={() => router.push(`/admin/tasks/${task.id}`)}
                     >
                       <div className="truncate max-w-[150px] md:max-w-none">
@@ -798,7 +798,7 @@ export default function AdminTasksPage() {
               <h3 className="text-sm md:text-base font-semibold mb-2 text-gray-900 dark:text-white">
                 No tasks found
               </h3>
-              <p className="text-xs md:text-sm text-slate-700 dark:text-slate-300 mb-4">
+              <p className="text-xs md:text-sm text-gray-700 dark:text-slate-300 mb-4">
                 {searchParams.get("search") ? `No tasks match "${searchParams.get("search")}"` : "Create your first task to get started"}
               </p>
               {!searchParams.get("search") && (

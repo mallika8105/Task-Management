@@ -90,21 +90,9 @@ export async function POST(request: Request) {
     if (userToDelete) {
       console.log("API: Found user to delete:", userToDelete.id);
       
-      // Delete from Supabase Auth
-      const { error: deleteAuthError } = await adminSupabase.auth.admin.deleteUser(
-        userToDelete.id
-      );
-      
-      if (deleteAuthError) {
-        console.error("API: Error deleting user from Supabase Auth:", deleteAuthError);
-        return NextResponse.json({ 
-          error: deleteAuthError.message || "Failed to delete user from Supabase Auth." 
-        }, { status: 500 });
-      }
-      
-      console.log(`API: User with ID ${userToDelete.id} deleted from Supabase Auth.`);
-
-      // Soft delete from public.users table (mark as inactive instead of deleting)
+      // IMPORTANT: Mark user as inactive and sign them out
+      // The database has ON DELETE NO ACTION constraint to preserve historical data
+      // So we don't delete from auth.users, we just mark as inactive and revoke access
       console.log("API: Marking user as inactive in public.users table with email:", email);
       const { error: updateUserTableError } = await adminSupabase
         .from("users")
@@ -114,11 +102,25 @@ export async function POST(request: Request) {
       if (updateUserTableError) {
         console.error("API: Error updating user status in public.users table:", updateUserTableError);
         return NextResponse.json({ 
-          error: updateUserTableError.message || "Failed to update user status in database." 
+          error: "Database error deleting user",
+          details: updateUserTableError.message 
         }, { status: 500 });
       }
       
       console.log(`API: User with email ${email} marked as inactive successfully in public.users table.`);
+
+      // Sign out the user from all sessions
+      const { error: signOutError } = await adminSupabase.auth.admin.signOut(
+        userToDelete.id,
+        'global' // Sign out from all sessions
+      );
+      
+      if (signOutError) {
+        console.warn("API: Error signing out user (non-critical):", signOutError.message);
+        // Don't fail the operation if sign-out fails, user is already marked inactive
+      } else {
+        console.log(`API: User with ID ${userToDelete.id} signed out from all sessions.`);
+      }
 
       return NextResponse.json({ 
         message: `User with email ${email} deleted successfully.` 

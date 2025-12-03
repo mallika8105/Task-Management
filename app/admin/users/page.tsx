@@ -43,6 +43,7 @@ interface User {
   full_name: string;
   email: string;
   role: "admin" | "employee";
+  status?: "active" | "inactive";
 }
 
 interface Invitation {
@@ -75,9 +76,13 @@ export default function AdminUsersPage() {
       }
       setCurrentUser(user);
 
+      // Fetch only active users (filter out inactive/deleted users)
       const { data, error } = await supabase.from("users").select("*");
       if (error) throw error;
-      setUsers(data as User[]);
+      
+      // Filter to show only active users (or users without status for backward compatibility)
+      const activeUsers = (data as User[]).filter(user => !user.status || user.status === 'active');
+      setUsers(activeUsers);
 
       // Fetch all invitations
       const { data: invitationsData, error: invError } = await supabase
@@ -335,14 +340,14 @@ export default function AdminUsersPage() {
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 border-b border-teal-300 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500">
-                    <TableCell className="text-sm text-slate-800 dark:text-slate-100 font-medium">
+                  <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 border-b border-gray-200 dark:border-gray-800">
+                    <TableCell className="text-sm text-gray-900 dark:text-slate-100 font-medium">
                       <div className="truncate max-w-[150px] md:max-w-none">{user.full_name}</div>
                     </TableCell>
-                    <TableCell className="text-sm text-slate-800 dark:text-slate-100 font-medium">
+                    <TableCell className="text-sm text-gray-900 dark:text-slate-100 font-medium">
                       <div className="truncate max-w-[150px] md:max-w-none">{user.email}</div>
                     </TableCell>
-                    <TableCell className="text-sm text-slate-800 dark:text-slate-100 font-medium capitalize">{user.role}</TableCell>
+                    <TableCell className="text-sm text-gray-900 dark:text-slate-100 font-medium capitalize">{user.role}</TableCell>
                     <TableCell>
                       <Select
                         value={user.role}
@@ -392,11 +397,11 @@ export default function AdminUsersPage() {
                 </TableHeader>
                 <TableBody>
                 {invitations.map((invitation) => (
-                    <TableRow key={invitation.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 border-b border-teal-300 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500">
-                      <TableCell className="text-sm text-slate-800 dark:text-slate-100 font-medium">
+                    <TableRow key={invitation.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 border-b border-gray-200 dark:border-gray-800">
+                      <TableCell className="text-sm text-gray-900 dark:text-slate-100 font-medium">
                         <div className="truncate max-w-[150px] md:max-w-none">{invitation.email}</div>
                       </TableCell>
-                      <TableCell className="text-sm text-slate-800 dark:text-slate-100 font-medium">
+                      <TableCell className="text-sm text-gray-900 dark:text-slate-100 font-medium">
                         {new Date(invitation.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell>

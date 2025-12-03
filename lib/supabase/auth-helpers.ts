@@ -76,10 +76,10 @@ export async function getCurrentUser() {
       return null;
     }
 
-    // Fetch the user's role and profile_image from the public.users table
+    // Fetch the user's role, profile_image, and status from the public.users table
     const { data: userProfile, error: profileError } = await supabase
       .from('users')
-      .select('role, profile_image')
+      .select('role, profile_image, status')
       .eq('id', user.id)
       .single();
 
@@ -88,6 +88,14 @@ export async function getCurrentUser() {
       // If there's an error fetching the profile (e.g., no entry yet),
       // the user might have just signed up and the trigger hasn't completed yet.
       // Return null to force a re-authentication
+      return null;
+    }
+
+    // Check if user is inactive - deny access if so
+    if (userProfile.status === 'inactive') {
+      console.log("User is inactive, signing them out");
+      // Sign out the user
+      await supabase.auth.signOut();
       return null;
     }
 

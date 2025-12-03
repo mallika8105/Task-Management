@@ -2,14 +2,17 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create the 'users' table
+-- Note: ON DELETE NO ACTION preserves user records when auth user is deleted
+-- This is important for maintaining historical task assignment data
 CREATE TABLE IF NOT EXISTS users (
-  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE NO ACTION,
   full_name text,
   email text UNIQUE,
   role text CHECK (role IN ('admin', 'employee')) DEFAULT 'employee',
   manager text,
   team text,
   profile_image text,
+  status text CHECK (status IN ('active', 'inactive')) DEFAULT 'active',
   created_at timestamp DEFAULT now()
 );
 

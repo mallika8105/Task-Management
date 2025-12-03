@@ -103,23 +103,29 @@ export default function DashboardPage() {
           return date.toISOString().split('T')[0];
         });
 
-        const trendData = last30Days.map(date => {
-          const dayStart = new Date(date + 'T00:00:00');
-          const dayEnd = new Date(date + 'T23:59:59');
+        const trendData = last30Days.map(dateStr => {
+          // Create date range in local timezone for accurate comparison
+          const dayStart = new Date(dateStr);
+          dayStart.setHours(0, 0, 0, 0);
+          
+          const dayEnd = new Date(dateStr);
+          dayEnd.setHours(23, 59, 59, 999);
 
           const count = tasksData?.filter((t: any) => {
             if (t.status !== 'completed') return false;
             
             // Use updated_at if it exists and is different from created_at
             // Otherwise use created_at for tasks that were created as completed
-            const completionDate = t.updated_at && t.updated_at !== t.created_at 
-              ? new Date(t.updated_at) 
-              : new Date(t.created_at);
+            const completionTimestamp = t.updated_at && t.updated_at !== t.created_at 
+              ? t.updated_at 
+              : t.created_at;
+            
+            const completionDate = new Date(completionTimestamp);
             
             return completionDate >= dayStart && completionDate <= dayEnd;
           }).length || 0;
 
-          return { date, count };
+          return { date: dateStr, count };
         });
 
         setCompletionTrend(trendData);
