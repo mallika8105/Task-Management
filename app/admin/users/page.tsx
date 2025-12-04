@@ -65,7 +65,21 @@ export default function AdminUsersPage() {
     "employee"
   );
   const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    checkDarkMode();
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -265,11 +279,11 @@ export default function AdminUsersPage() {
 
   return (
     <div className="p-3 md:p-6">
-      <Card className="bg-white dark:bg-black border-gray-200 dark:border-gray-800 shadow-sm">
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 border-b border-purple-500 dark:border-purple-800 p-4 md:p-6">
+      <Card className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-blue-100'} shadow-sm`}>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 md:p-6">
           <div>
-            <CardTitle className="text-xl md:text-2xl font-bold text-white">User Management</CardTitle>
-            <p className="text-xs md:text-sm text-white/90 dark:text-white/80 mt-1">Manage users and send invitations</p>
+            <CardTitle className={`text-xl md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-black'}`}>User Management</CardTitle>
+            <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-400' : 'text-black'} mt-1`}>Manage users and send invitations</p>
           </div>
           <Dialog
             open={isInviteDialogOpen}
@@ -332,22 +346,22 @@ export default function AdminUsersPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50 dark:bg-gray-900/50 border-b-2 border-gray-200 dark:border-gray-800">
-                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Full Name</TableHead>
-                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Email</TableHead>
-                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Role</TableHead>
-                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Actions</TableHead>
+                  <TableHead className="text-black dark:text-white text-sm font-semibold">Full Name</TableHead>
+                  <TableHead className="text-black dark:text-white text-sm font-semibold">Email</TableHead>
+                  <TableHead className="text-black dark:text-white text-sm font-semibold">Role</TableHead>
+                  <TableHead className="text-black dark:text-white text-sm font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 border-b border-gray-200 dark:border-gray-800">
-                    <TableCell className="text-sm text-gray-900 dark:text-slate-100 font-medium">
+                  <TableRow key={user.id}>
+                    <TableCell className="text-sm font-medium">
                       <div className="truncate max-w-[150px] md:max-w-none">{user.full_name}</div>
                     </TableCell>
-                    <TableCell className="text-sm text-gray-900 dark:text-slate-100 font-medium">
+                    <TableCell className="text-sm font-medium">
                       <div className="truncate max-w-[150px] md:max-w-none">{user.email}</div>
                     </TableCell>
-                    <TableCell className="text-sm text-gray-900 dark:text-slate-100 font-medium capitalize">{user.role}</TableCell>
+                    <TableCell className="text-sm font-medium capitalize">{user.role}</TableCell>
                     <TableCell>
                       <Select
                         value={user.role}
@@ -356,7 +370,7 @@ export default function AdminUsersPage() {
                         }
                         disabled={user.id === currentUser.id} // Prevent changing own role
                       >
-                        <SelectTrigger className="w-[120px] md:w-[180px] text-xs md:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                        <SelectTrigger className="w-[120px] md:w-[180px] text-xs md:text-sm bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-black dark:text-white">
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
                         <SelectContent>
@@ -375,12 +389,12 @@ export default function AdminUsersPage() {
 
       {/* Invitations Section */}
       {invitations.length > 0 && (
-        <Card className="bg-white dark:bg-black border-gray-200 dark:border-gray-800 shadow-sm mt-4 md:mt-6">
-          <CardHeader className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 border-b border-purple-500 dark:border-purple-800 p-4 md:p-6">
-            <CardTitle className="text-lg md:text-xl font-bold text-white">
+        <Card className={`${darkMode ? 'bg-black border-gray-800' : 'bg-white border-blue-100'} shadow-sm mt-4 md:mt-6`}>
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-black'}`}>
               Pending Invitations ({invitations.length})
             </CardTitle>
-            <p className="text-xs md:text-sm text-white/90 dark:text-white/80 mt-1">
+            <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-400' : 'text-black'} mt-1`}>
               Invitation history and status
             </p>
           </CardHeader>
@@ -389,19 +403,19 @@ export default function AdminUsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50 dark:bg-gray-900/50 border-b-2 border-gray-200 dark:border-gray-800">
-                    <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Email</TableHead>
-                    <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Invited On</TableHead>
-                    <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Status</TableHead>
-                    <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Actions</TableHead>
+                    <TableHead className="text-black dark:text-white text-sm font-semibold">Email</TableHead>
+                    <TableHead className="text-black dark:text-white text-sm font-semibold">Invited On</TableHead>
+                    <TableHead className="text-black dark:text-white text-sm font-semibold">Status</TableHead>
+                    <TableHead className="text-black dark:text-white text-sm font-semibold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                 {invitations.map((invitation) => (
-                    <TableRow key={invitation.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 border-b border-gray-200 dark:border-gray-800">
-                      <TableCell className="text-sm text-gray-900 dark:text-slate-100 font-medium">
+                    <TableRow key={invitation.id}>
+                      <TableCell className="text-sm font-medium">
                         <div className="truncate max-w-[150px] md:max-w-none">{invitation.email}</div>
                       </TableCell>
-                      <TableCell className="text-sm text-gray-900 dark:text-slate-100 font-medium">
+                      <TableCell className="text-sm font-medium">
                         {new Date(invitation.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell>

@@ -322,13 +322,13 @@ export default function AdminTasksPage() {
   const getStatusStyle = (status: string) => {
     switch (status) {
       case "completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-50 border-green-300 dark:border-green-700";
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-50";
       case "in_progress":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-50 border-blue-300 dark:border-blue-700";
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-50";
       case "not_picked":
-        return "bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-50 border-gray-300 dark:border-gray-600";
+        return "bg-gray-100 text-black dark:bg-gray-700 dark:text-gray-50";
       default:
-        return "bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-50 border-gray-300 dark:border-gray-600";
+        return "bg-gray-100 text-black dark:bg-gray-700 dark:text-gray-50";
     }
   };
 
@@ -449,14 +449,14 @@ export default function AdminTasksPage() {
 
   return (
     <div className="p-3 md:p-6">
-      <Card className="bg-white dark:bg-black border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 border-b border-purple-500 dark:border-purple-800 p-4 md:p-6">
+      <Card className="bg-white dark:bg-black border-blue-100 dark:border-gray-800 shadow-sm overflow-hidden">
+        <CardHeader className="p-4 md:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
             <div>
-              <CardTitle className="text-xl md:text-2xl font-bold text-white">
+              <CardTitle className="text-xl md:text-2xl font-bold text-black dark:text-white">
                 Task Management
               </CardTitle>
-              <p className="text-xs md:text-sm text-white/90 dark:text-white/80 mt-1">
+              <p className="text-xs md:text-sm text-black dark:text-gray-400 mt-1">
                 Create and manage tasks for your team
               </p>
             </div>
@@ -710,16 +710,16 @@ export default function AdminTasksPage() {
             <Table>
               <TableHeader>
                 <TableRow className="dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 border-b-2 border-gray-200 dark:border-gray-800">
-                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Title</TableHead>
-                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Status</TableHead>
-                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Priority</TableHead>
-                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Deadline</TableHead>
-                  <TableHead className="text-gray-900 dark:text-white text-sm font-semibold">Assigned To</TableHead>
+                  <TableHead className="text-black dark:text-white text-sm font-semibold">Title</TableHead>
+                  <TableHead className="text-black dark:text-white text-sm font-semibold">Status</TableHead>
+                  <TableHead className="text-black dark:text-white text-sm font-semibold">Priority</TableHead>
+                  <TableHead className="text-black dark:text-white text-sm font-semibold">Deadline</TableHead>
+                  <TableHead className="text-black dark:text-white text-sm font-semibold">Assigned To</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tasks.map((task) => (
-                  <TableRow key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b border-gray-200 dark:border-gray-800">
+                  <TableRow key={task.id}>
                     <TableCell 
                       className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer text-sm hover:underline"
                       onClick={() => router.push(`/admin/tasks/${task.id}`)}
@@ -760,13 +760,13 @@ export default function AdminTasksPage() {
                       </span>
                     </TableCell>
                     <TableCell 
-                      className="cursor-pointer text-sm text-gray-900 dark:text-slate-100 font-medium"
+                      className="cursor-pointer text-sm font-medium"
                       onClick={() => router.push(`/admin/tasks/${task.id}`)}
                     >
                       {task.deadline}
                     </TableCell>
                     <TableCell 
-                      className="cursor-pointer text-sm text-gray-900 dark:text-slate-100 font-medium"
+                      className="cursor-pointer text-sm font-medium"
                       onClick={() => router.push(`/admin/tasks/${task.id}`)}
                     >
                       <div className="truncate max-w-[150px] md:max-w-none">
@@ -795,10 +795,10 @@ export default function AdminTasksPage() {
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                 />
               </svg>
-              <h3 className="text-sm md:text-base font-semibold mb-2 text-gray-900 dark:text-white">
+              <h3 className="text-sm md:text-base font-semibold mb-2 text-black dark:text-white">
                 No tasks found
               </h3>
-              <p className="text-xs md:text-sm text-gray-700 dark:text-slate-300 mb-4">
+              <p className="text-xs md:text-sm text-black dark:text-slate-300 mb-4">
                 {searchParams.get("search") ? `No tasks match "${searchParams.get("search")}"` : "Create your first task to get started"}
               </p>
               {!searchParams.get("search") && (
