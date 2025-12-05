@@ -90,40 +90,41 @@ export async function POST(request: Request) {
     if (userToDelete) {
       console.log("API: Found user to delete:", userToDelete.id);
       
-      // IMPORTANT: Mark user as inactive and sign them out
-      // The database has ON DELETE NO ACTION constraint to preserve historical data
-      // So we don't delete from auth.users, we just mark as inactive and revoke access
-      console.log("API: Marking user as inactive in public.users table with email:", email);
-      const { error: updateUserTableError } = await adminSupabase
+      // First, delete from public.users table
+      console.log("API: Deleting user from public.users table with email:", email);
+      const { error: deleteUserTableError } = await adminSupabase
         .from("users")
-        .update({ status: 'inactive' })
+        .delete()
         .eq("email", email);
       
-      if (updateUserTableError) {
-        console.error("API: Error updating user status in public.users table:", updateUserTableError);
+      if (deleteUserTableError) {
+        console.error("API: Error deleting user from public.users table:", deleteUserTableError);
         return NextResponse.json({ 
           error: "Database error deleting user",
-          details: updateUserTableError.message 
+          details: deleteUserTableError.message 
         }, { status: 500 });
       }
       
-      console.log(`API: User with email ${email} marked as inactive successfully in public.users table.`);
+      console.log(`API: User with email ${email} deleted from public.users table.`);
 
-      // Sign out the user from all sessions
-      const { error: signOutError } = await adminSupabase.auth.admin.signOut(
-        userToDelete.id,
-        'global' // Sign out from all sessions
+      // Then delete from auth.users (this allows the email to be reused)
+      console.log("API: Deleting user from auth.users with ID:", userToDelete.id);
+      const { error: deleteAuthError } = await adminSupabase.auth.admin.deleteUser(
+        userToDelete.id
       );
       
-      if (signOutError) {
-        console.warn("API: Error signing out user (non-critical):", signOutError.message);
-        // Don't fail the operation if sign-out fails, user is already marked inactive
-      } else {
-        console.log(`API: User with ID ${userToDelete.id} signed out from all sessions.`);
+      if (deleteAuthError) {
+        console.error("API: Error deleting user from auth.users:", deleteAuthError);
+        return NextResponse.json({ 
+          error: "Failed to delete user from authentication system",
+          details: deleteAuthError.message 
+        }, { status: 500 });
       }
+      
+      console.log(`API: User with ID ${userToDelete.id} deleted from auth.users successfully.`);
 
       return NextResponse.json({ 
-        message: `User with email ${email} deleted successfully.` 
+        message: `User with email ${email} deleted successfully from both database and authentication.` 
       }, { status: 200 });
     } else {
       console.log(`API: No active user found with email ${email} in Supabase Auth.`);
