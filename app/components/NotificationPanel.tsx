@@ -13,6 +13,7 @@ import {
   markAllNotificationsAsRead,
   type Notification,
 } from "@/lib/supabase/notification-helpers";
+import { theme } from "@/lib/theme-classes";
 
 interface NotificationPanelProps {
   userId: string;
@@ -152,8 +153,8 @@ export default function NotificationPanel({
         size="icon"
         className={`relative ${
           darkMode
-            ? "text-gray-300 hover:text-white hover:bg-gray-800"
-            : ""
+            ? "text-gray-300 hover:bg-gray-800"
+            : "text-gray-700 hover:bg-gray-100"
         }`}
         onClick={() => {
           setShowNotifications(!showNotifications);
@@ -162,7 +163,10 @@ export default function NotificationPanel({
           }
         }}
       >
-        <Bell size={20} className={darkMode ? "text-gray-300" : ""} />
+        <Bell 
+          size={20} 
+          className={darkMode ? "text-gray-300" : "text-gray-700"}
+        />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
             {unreadCount > 99 ? "99+" : unreadCount}
@@ -179,25 +183,21 @@ export default function NotificationPanel({
           />
 
           {/* Notification Panel */}
-          <div
-            className={`fixed top-16 right-4 w-96 max-h-[600px] border rounded-lg shadow-2xl z-50 overflow-hidden flex flex-col ${
+          <div className={`fixed top-16 right-4 w-96 max-h-[600px] border rounded-lg shadow-2xl z-50 overflow-hidden flex flex-col ${
+            darkMode
+              ? "bg-black border-gray-800"
+              : "bg-white border-gray-200"
+          }`}>
+            {/* Header */}
+            <div className={`sticky top-0 border-b p-4 ${
               darkMode
                 ? "bg-black border-gray-800"
                 : "bg-white border-gray-200"
-            }`}
-          >
-            {/* Header */}
-            <div
-              className={`sticky top-0 border-b p-4 ${
-                darkMode ? "bg-black border-gray-800" : "bg-white border-gray-200"
-              }`}
-            >
+            }`}>
               <div className="flex items-center justify-between mb-2">
-                <h2
-                  className={`text-lg font-semibold ${
-                    darkMode ? "text-white" : ""
-                  }`}
-                >
+                <h2 className={`text-lg font-semibold ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}>
                   Notifications
                 </h2>
                 <div className="flex items-center gap-2">
@@ -209,7 +209,7 @@ export default function NotificationPanel({
                       className={`text-xs ${
                         darkMode
                           ? "text-gray-300 hover:text-white hover:bg-gray-800"
-                          : ""
+                          : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                       }`}
                     >
                       <CheckCheck size={14} className="mr-1" />
@@ -220,21 +220,18 @@ export default function NotificationPanel({
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowNotifications(false)}
-                    className={
-                      darkMode
-                        ? "text-gray-300 hover:text-white hover:bg-gray-800"
-                        : ""
+                    className={darkMode
+                      ? "text-gray-300 hover:text-white hover:bg-gray-800"
+                      : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                     }
                   >
                     <X size={16} />
                   </Button>
                 </div>
               </div>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-gray-400" : "text-gray-500"
-                }`}
-              >
+              <p className={`text-sm ${
+                darkMode ? "text-gray-400" : "text-gray-500"
+              }`}>
                 {unreadCount > 0
                   ? `${unreadCount} unread notification${
                       unreadCount === 1 ? "" : "s"
@@ -246,37 +243,55 @@ export default function NotificationPanel({
             {/* Notifications List */}
             <div className="flex-1 overflow-y-auto">
               {loading ? (
-                <div
-                  className={`flex items-center justify-center py-12 ${
-                    darkMode ? "text-gray-400" : "text-gray-500"
-                  }`}
-                >
-                  Loading...
+                <div className={`divide-y ${darkMode ? "divide-gray-800" : "divide-gray-200"}`}>
+                  {/* Skeleton Loaders */}
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="p-4 animate-pulse">
+                      <div className="flex items-start gap-3">
+                        {/* Icon Skeleton */}
+                        <div className={`w-8 h-8 rounded-full ${darkMode ? "bg-gray-800" : "bg-gray-200"}`}></div>
+                        
+                        <div className="flex-1 space-y-3">
+                          {/* Title Skeleton */}
+                          <div className={`h-4 rounded ${darkMode ? "bg-gray-800" : "bg-gray-200"} w-3/4`}></div>
+                          
+                          {/* Message Skeleton */}
+                          <div className="space-y-2">
+                            <div className={`h-3 rounded ${darkMode ? "bg-gray-800" : "bg-gray-200"} w-full`}></div>
+                            <div className={`h-3 rounded ${darkMode ? "bg-gray-800" : "bg-gray-200"} w-5/6`}></div>
+                          </div>
+                          
+                          {/* Time Skeleton */}
+                          <div className={`h-3 rounded ${darkMode ? "bg-gray-800" : "bg-gray-200"} w-20`}></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : notifications.length === 0 ? (
-                <div
-                  className={`flex flex-col items-center justify-center py-12 px-4 ${
-                    darkMode ? "text-gray-400" : "text-gray-500"
-                  }`}
-                >
+                <div className={`flex flex-col items-center justify-center py-12 px-4 ${
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                }`}>
                   <Bell size={48} className="mb-2 opacity-30" />
                   <p className="text-center">No notifications yet</p>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-200 dark:divide-gray-800">
+                <div className={`divide-y ${
+                  darkMode ? "divide-gray-800" : "divide-gray-200"
+                }`}>
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
                       className={`p-4 cursor-pointer transition-colors ${
+                        darkMode
+                          ? "hover:bg-gray-900"
+                          : "hover:bg-gray-50"
+                      } ${
                         !notification.is_read
                           ? darkMode
                             ? "bg-gray-900/50"
                             : "bg-blue-50"
                           : ""
-                      } ${
-                        darkMode
-                          ? "hover:bg-gray-900"
-                          : "hover:bg-gray-50"
                       }`}
                       onClick={() => handleNotificationClick(notification)}
                     >
@@ -284,52 +299,46 @@ export default function NotificationPanel({
                         <div className="text-2xl flex-shrink-0">
                           {getNotificationIcon(notification.type)}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <h3
-                              className={`font-medium text-sm ${
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h3 className={`font-medium text-sm ${
                                 darkMode ? "text-white" : "text-gray-900"
-                              }`}
-                            >
-                              {notification.title}
-                            </h3>
+                              }`}>
+                                {notification.title}
+                              </h3>
                             {!notification.is_read && (
                               <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1" />
                             )}
                           </div>
-                          <p
-                            className={`text-sm line-clamp-2 mb-2 ${
+                            <p className={`text-sm line-clamp-2 mb-2 ${
                               darkMode ? "text-gray-300" : "text-gray-600"
-                            }`}
-                          >
-                            {notification.message}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <span
-                              className={`text-xs ${
+                            }`}>
+                              {notification.message}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs ${
                                 darkMode ? "text-gray-400" : "text-gray-500"
-                              }`}
-                            >
-                              {formatTimeAgo(notification.created_at)}
-                            </span>
-                            {!notification.is_read && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMarkAsRead(notification.id);
-                                }}
-                                className={`text-xs h-6 ${
-                                  darkMode
-                                    ? "text-gray-400 hover:text-white hover:bg-gray-800"
-                                    : ""
-                                }`}
-                              >
-                                <Check size={12} className="mr-1" />
-                                Mark read
-                              </Button>
-                            )}
+                              }`}>
+                                {formatTimeAgo(notification.created_at)}
+                              </span>
+                              {!notification.is_read && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsRead(notification.id);
+                                  }}
+                                  className={`text-xs h-6 ${
+                                    darkMode
+                                      ? "text-gray-400 hover:text-white hover:bg-gray-800"
+                                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                                  }`}
+                                >
+                                  <Check size={12} className="mr-1" />
+                                  Mark read
+                                </Button>
+                              )}
                           </div>
                         </div>
                       </div>
