@@ -223,23 +223,23 @@ export default function AdminAccountPage() {
                 Profile Information
               </CardTitle>
             </div>
-            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
+            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Update your personal information
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="fullName" className={darkMode ? 'text-gray-300' : ''}>Full Name</Label>
+                <Label htmlFor="fullName" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Full Name</Label>
                 <Input
                   id="fullName"
                   value={formData.fullName}
                   onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                  className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : ''}`}
+                  className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                 />
               </div>
               <div>
-                <Label htmlFor="email" className={darkMode ? 'text-gray-300' : ''}>Email Address</Label>
+                <Label htmlFor="email" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Email Address</Label>
                 <Input
                   id="email"
                   type="email"
@@ -250,14 +250,14 @@ export default function AdminAccountPage() {
               </div>
             </div>
             <div>
-              <Label htmlFor="phone" className={darkMode ? 'text-gray-300' : ''}>Phone Number</Label>
+              <Label htmlFor="phone" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Phone Number</Label>
               <Input
                 id="phone"
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
                 placeholder="+1 (555) 123-4567"
-                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : ''}`}
+                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               />
             </div>
             
@@ -307,40 +307,40 @@ export default function AdminAccountPage() {
               Change Password
             </CardTitle>
           </div>
-          <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
+          <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             Update your password to keep your account secure
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl">
             <div>
-              <Label htmlFor="currentPassword" className={darkMode ? 'text-gray-300' : ''}>Current Password</Label>
+              <Label htmlFor="currentPassword" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Current Password</Label>
               <Input
                 id="currentPassword"
                 type="password"
                 value={formData.currentPassword}
                 onChange={(e) => setFormData({...formData, currentPassword: e.target.value})}
-                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : ''}`}
+                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               />
             </div>
             <div>
-              <Label htmlFor="newPassword" className={darkMode ? 'text-gray-300' : ''}>New Password</Label>
+              <Label htmlFor="newPassword" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>New Password</Label>
               <Input
                 id="newPassword"
                 type="password"
                 value={formData.newPassword}
                 onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
-                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : ''}`}
+                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               />
             </div>
             <div>
-              <Label htmlFor="confirmPassword" className={darkMode ? 'text-gray-300' : ''}>Confirm New Password</Label>
+              <Label htmlFor="confirmPassword" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Confirm New Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : ''}`}
+                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               />
             </div>
           </div>
@@ -349,7 +349,7 @@ export default function AdminAccountPage() {
               onClick={handleChangePassword}
               disabled={saving || !formData.currentPassword || !formData.newPassword || !formData.confirmPassword}
               variant="outline"
-              className={darkMode ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
+              className={darkMode ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : 'border-gray-300 text-gray-900 hover:bg-gray-50'}
             >
               Change Password
             </Button>

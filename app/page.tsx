@@ -19,23 +19,24 @@ import {
   Target,
   ArrowRight,
   Sparkles,
-  X,
 } from "lucide-react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  signInWithEmail,
-  getCurrentUser,
-  USE_MOCK_AUTH,
-} from "@/lib/supabase/auth-helpers";
+import { useState, useEffect } from "react";
 
 export default function HomePage() {
-  const [showSignInModal, setShowSignInModal] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    checkDarkMode();
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    return () => observer.disconnect();
+  }, []);
   const features = [
     {
       icon: <Target className="h-6 w-6" />,
@@ -86,55 +87,47 @@ export default function HomePage() {
             Powerful Task Management
           </Badge>
 
-          <h1 className="mx-auto max-w-4xl font-display text-5xl font-bold tracking-tight text-slate-900 sm:text-7xl">
+          <h1 className={`mx-auto max-w-4xl font-display text-5xl font-bold tracking-tight sm:text-7xl ${darkMode ? 'text-white' : 'text-slate-900'}`}>
             Manage Tasks{" "}
             <span className="relative whitespace-nowrap text-primary">
               <span className="relative">Efficiently</span>
             </span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-lg tracking-tight text-slate-700">
+          <p className={`mx-auto mt-6 max-w-2xl text-lg tracking-tight ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>
             Streamline your workflow, boost productivity, and achieve more with
             our comprehensive task management solution.
           </p>
 
-          <div className="mt-10 flex justify-center gap-x-6">
-            <Link href="/auth/signup">
+          <div className="mt-10 flex justify-center">
+            <Link href="/auth/login">
               <Button
                 size="lg"
-                className="bg-black text-white hover:bg-black/90 group"
+                className={`group ${darkMode ? 'bg-primary text-white hover:bg-primary/90' : 'bg-black text-white hover:bg-black/90'}`}
               >
-                Get Started
+                Sign In
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => setShowSignInModal(true)}
-              className="border-foreground text-foreground hover:bg-foreground hover:text-background"
-            >
-              Sign In
-            </Button>
           </div>
 
           {/* Stats */}
           <div className="mt-16 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:gap-8">
             <div>
               <div className="text-4xl font-bold text-primary">10K+</div>
-              <div className="mt-2 text-sm text-slate-600">Active Users</div>
+              <div className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>Active Users</div>
             </div>
             <div>
               <div className="text-4xl font-bold text-primary">50K+</div>
-              <div className="mt-2 text-sm text-slate-600">Tasks Completed</div>
+              <div className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>Tasks Completed</div>
             </div>
             <div>
               <div className="text-4xl font-bold text-primary">99.9%</div>
-              <div className="mt-2 text-sm text-slate-600">Uptime</div>
+              <div className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>Uptime</div>
             </div>
             <div>
               <div className="text-4xl font-bold text-primary">24/7</div>
-              <div className="mt-2 text-sm text-slate-600">Support</div>
+              <div className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>Support</div>
             </div>
           </div>
         </div>
@@ -147,10 +140,10 @@ export default function HomePage() {
             <h2 className="text-base font-semibold leading-7 text-primary">
               Everything you need
             </h2>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            <p className={`mt-2 text-3xl font-bold tracking-tight sm:text-4xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               All-in-one task management platform
             </p>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
+            <p className={`mt-6 text-lg leading-8 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Powerful features to help you and your team stay organized and
               productive.
             </p>
@@ -216,149 +209,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Sign In Modal */}
-      {showSignInModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
-            <button
-              onClick={() => setShowSignInModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Sign In</h2>
-              <p className="text-sm text-gray-600 mt-2">
-                Welcome back! Please sign in to continue
-              </p>
-            </div>
-
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                setError(null);
-
-                try {
-                  // Use mock sign-in if USE_MOCK_AUTH is true
-                  if (
-                    USE_MOCK_AUTH &&
-                    email === "mallikam8105@gmail.com" &&
-                    password === "pass123"
-                  ) {
-                    const user = await getCurrentUser();
-                    if (user && user.role === "admin") {
-                      router.push("/admin/dashboard");
-                    } else {
-                      router.push("/dashboard");
-                    }
-                  } else {
-                    // Proceed with real Supabase sign-in
-                    await signInWithEmail(email, password);
-                    const user = await getCurrentUser();
-
-                    if (user && user.user_metadata?.role === "admin") {
-                      router.push("/admin/dashboard");
-                    } else if (user) {
-                      router.push("/dashboard");
-                    } else {
-                      setError(
-                        "Login successful, but could not retrieve user data. Please try again."
-                      );
-                    }
-                  }
-                } catch (err: any) {
-                  if (err.message === "Email not confirmed") {
-                    setError(
-                      "Please check your email to confirm your account before signing in."
-                    );
-                  } else {
-                    setError(err.message || "An unexpected error occurred.");
-                  }
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                  placeholder="you@example.com"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="rounded border-gray-300 text-black focus:ring-black"
-                  />
-                  <span className="ml-2 text-sm text-gray-600">
-                    Remember me
-                  </span>
-                </label>
-                <Link
-                  href="/auth/login"
-                  className="text-sm text-black hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-black text-white hover:bg-black/90"
-                disabled={loading}
-              >
-                {loading ? "Signing in..." : "Sign In"}
-              </Button>
-
-              <div className="text-center text-sm text-gray-600">
-                Don't have an account?{" "}
-                <Link
-                  href="/auth/signup"
-                  className="text-black hover:underline font-medium"
-                >
-                  Sign up
-                </Link>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

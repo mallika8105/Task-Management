@@ -35,33 +35,19 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 export function Sidebar({
   children,
   className,
+  darkMode,
 }: {
   children: React.ReactNode;
   className?: string;
+  darkMode?: boolean;
 }) {
   const { collapsed } = useSidebar();
-  const [isDark, setIsDark] = React.useState(false);
-
-  React.useEffect(() => {
-    const checkDarkMode = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-    
-    checkDarkMode();
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-    
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <aside
       className={cn(
         "flex flex-col h-screen border-r transition-all duration-300",
-        isDark ? "bg-black border-gray-800" : "bg-white border-gray-200",
+        darkMode ? "border-gray-800" : "border-gray-200",
         collapsed ? "w-16" : "w-64",
         className
       )}
@@ -74,29 +60,16 @@ export function Sidebar({
 export function SidebarHeader({
   children,
   className,
+  darkMode,
 }: {
   children: React.ReactNode;
   className?: string;
+  darkMode?: boolean;
 }) {
-  const [isDark, setIsDark] = React.useState(false);
-
-  React.useEffect(() => {
-    const checkDarkMode = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-    checkDarkMode();
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <div className={cn(
       "px-4 py-4 border-b h-16 flex items-center",
-      isDark ? "border-gray-800" : "border-gray-200",
+      darkMode ? "border-gray-800" : "border-gray-200",
       className
     )}>
       {children}
@@ -121,29 +94,16 @@ export function SidebarContent({
 export function SidebarFooter({
   children,
   className,
+  darkMode,
 }: {
   children: React.ReactNode;
   className?: string;
+  darkMode?: boolean;
 }) {
-  const [isDark, setIsDark] = React.useState(false);
-
-  React.useEffect(() => {
-    const checkDarkMode = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-    checkDarkMode();
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <div className={cn(
       "p-4 border-t",
-      isDark ? "border-gray-800" : "border-gray-200",
+      darkMode ? "border-gray-800" : "border-gray-200",
       className
     )}>
       {children}
@@ -167,28 +127,16 @@ export function SidebarMenuItem({
   icon,
   onClick,
   className,
+  darkMode,
 }: {
   children: React.ReactNode;
   active?: boolean;
   icon?: React.ReactNode;
   onClick?: () => void;
   className?: string;
+  darkMode?: boolean;
 }) {
   const { collapsed } = useSidebar();
-  const [isDark, setIsDark] = React.useState(false);
-
-  React.useEffect(() => {
-    const checkDarkMode = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-    checkDarkMode();
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <button
@@ -196,12 +144,12 @@ export function SidebarMenuItem({
       className={cn(
         "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
         active
-          ? isDark
+          ? darkMode
             ? "bg-gray-800 text-white"
             : "bg-gray-900 text-white"
-          : isDark
-          ? "text-gray-300 hover:bg-gray-800"
-          : "text-gray-700 hover:bg-gray-100",
+          : darkMode
+          ? "text-gray-300 hover:bg-gray-800 hover:text-gray-100"
+          : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
         collapsed && "justify-center",
         className
       )}

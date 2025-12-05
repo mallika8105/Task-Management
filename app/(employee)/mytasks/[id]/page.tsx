@@ -227,7 +227,7 @@ export default function TaskDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full p-6">
-        <div className="flex justify-center gap-2 text-gray-600 dark:text-gray-300">
+        <div className={`flex justify-center gap-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
           <span className="text-4xl animate-[bounce_1s_ease-in-out_0s_infinite]">.</span>
           <span className="text-4xl animate-[bounce_1s_ease-in-out_0.2s_infinite]">.</span>
           <span className="text-4xl animate-[bounce_1s_ease-in-out_0.4s_infinite]">.</span>
@@ -241,28 +241,54 @@ export default function TaskDetailPage() {
   }
 
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-200 dark:border-red-700";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-700";
-      case "low":
-        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-200 dark:border-green-700";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600";
+    if (darkMode) {
+      switch (priority) {
+        case "high":
+          return "bg-red-900 text-red-200 border-red-700";
+        case "medium":
+          return "bg-yellow-900 text-yellow-200 border-yellow-700";
+        case "low":
+          return "bg-green-900 text-green-200 border-green-700";
+        default:
+          return "bg-gray-800 text-gray-200 border-gray-600";
+      }
+    } else {
+      switch (priority) {
+        case "high":
+          return "bg-red-100 text-red-800 border-red-200";
+        case "medium":
+          return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        case "low":
+          return "bg-green-100 text-green-800 border-green-200";
+        default:
+          return "bg-gray-100 text-gray-800 border-gray-200";
+      }
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-200 dark:border-green-700";
-      case "in_progress":
-        return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700";
-      case "not_picked":
-        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600";
+    if (darkMode) {
+      switch (status) {
+        case "completed":
+          return "bg-green-900 text-green-200 border-green-700";
+        case "in_progress":
+          return "bg-blue-900 text-blue-200 border-blue-700";
+        case "not_picked":
+          return "bg-gray-800 text-gray-200 border-gray-600";
+        default:
+          return "bg-gray-800 text-gray-200 border-gray-600";
+      }
+    } else {
+      switch (status) {
+        case "completed":
+          return "bg-green-100 text-green-800 border-green-200";
+        case "in_progress":
+          return "bg-blue-100 text-blue-800 border-blue-200";
+        case "not_picked":
+          return "bg-gray-100 text-gray-800 border-gray-200";
+        default:
+          return "bg-gray-100 text-gray-800 border-gray-200";
+      }
     }
   };
 
@@ -273,12 +299,12 @@ export default function TaskDetailPage() {
         <Button
           variant="ghost"
           onClick={() => router.push("/mytasks")}
-          className="mb-4 text-gray-700 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800"
+          className={`mb-4 ${darkMode ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}`}
         >
-          <ArrowLeft size={16} className="mr-2" />
+          <ArrowLeft size={16} className={`mr-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
           Back to Tasks
         </Button>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{task.title}</h1>
+        <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{task.title}</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -291,15 +317,15 @@ export default function TaskDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                <label className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   Description
                 </label>
-                <p className="mt-1 text-gray-900 dark:text-white">{task.description}</p>
+                <p className={`mt-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{task.description}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  <label className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     Priority
                   </label>
                   <div className="mt-1">
@@ -311,7 +337,7 @@ export default function TaskDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  <label className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     Current Status
                   </label>
                   <div className="mt-1">
@@ -325,11 +351,11 @@ export default function TaskDetailPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                <label className={`text-sm font-medium flex items-center gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <Calendar size={16} />
                   Deadline
                 </label>
-                <p className="mt-1 text-gray-900 dark:text-white">
+                <p className={`mt-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   {new Date(task.deadline).toLocaleDateString("en-US", {
                     weekday: "long",
                     year: "numeric",
@@ -353,7 +379,7 @@ export default function TaskDetailPage() {
               {/* Comments List */}
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {comments.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                  <p className={`text-sm text-center py-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     No comments yet. Be the first to comment!
                   </p>
                 ) : (
@@ -367,19 +393,23 @@ export default function TaskDetailPage() {
                         <div
                           className={`max-w-[80%] rounded-lg p-3 border ${
                             isOwnComment
-                              ? 'bg-blue-500 text-white border-blue-600'
-                              : 'bg-gray-50 text-gray-900 border-gray-200 dark:bg-gray-800 dark:text-white dark:border-gray-700'
+                              ? darkMode
+                                ? 'bg-blue-700 text-white border-blue-800'
+                                : 'bg-blue-600 text-white border-blue-700'
+                              : darkMode
+                              ? 'bg-gray-800 text-white border-gray-700'
+                              : 'bg-gray-50 text-gray-900 border-gray-200'
                           }`}
                         >
                           <div className="mb-2">
-                            <p className={`text-sm font-medium ${isOwnComment ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                            <p className={`text-sm font-medium ${isOwnComment || darkMode ? 'text-white' : 'text-gray-900'}`}>
                               {isOwnComment ? 'You' : (comment.user?.full_name || "Unknown")}
                             </p>
-                            <p className={`text-xs ${isOwnComment ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                            <p className={`text-xs ${isOwnComment ? 'text-blue-50' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                               {new Date(comment.created_at).toLocaleString()}
                             </p>
                           </div>
-                          <p className={`text-sm whitespace-pre-wrap ${isOwnComment ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                          <p className={`text-sm whitespace-pre-wrap ${isOwnComment ? 'text-white' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                             {comment.comment}
                           </p>
                         </div>
@@ -399,7 +429,7 @@ export default function TaskDetailPage() {
                   className={`w-full ${darkMode ? 'bg-gray-900 border-gray-800 text-white placeholder:text-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-500'}`}
                 />
                 <Button
-                  className="mt-3 bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-100"
+                  className={`mt-3 ${darkMode ? 'bg-white text-black hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}
                   onClick={handleSubmitComment}
                   disabled={submittingComment || !newComment.trim()}
                 >
@@ -423,19 +453,19 @@ export default function TaskDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger>
+                <SelectTrigger className={`${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="not_picked">Not Picked</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                <SelectContent className={`${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-200 text-gray-900'}`}>
+                  <SelectItem className={`${darkMode ? 'hover:bg-gray-800 focus:bg-gray-800' : 'hover:bg-gray-100 focus:bg-gray-100'}`} value="not_picked">Not Picked</SelectItem>
+                  <SelectItem className={`${darkMode ? 'hover:bg-gray-800 focus:bg-gray-800' : 'hover:bg-gray-100 focus:bg-gray-100'}`} value="in_progress">In Progress</SelectItem>
+                  <SelectItem className={`${darkMode ? 'hover:bg-gray-800 focus:bg-gray-800' : 'hover:bg-gray-100 focus:bg-gray-100'}`} value="completed">Completed</SelectItem>
                 </SelectContent>
               </Select>
               <Button
                 onClick={handleUpdateStatus}
                 disabled={updating || status === task.status}
-                className="w-full bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-100"
+                className={`w-full ${darkMode ? 'bg-white text-black hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}
               >
                 {updating ? "Updating..." : "Update Status"}
               </Button>
@@ -448,20 +478,20 @@ export default function TaskDetailPage() {
               <CardTitle className={`text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>Task Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <div className={`flex items-center gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 <Clock size={16} />
                 <div>
-                  <p className="font-medium">Created</p>
-                  <p className="text-xs">
+                  <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Created</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {new Date(task.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <div className={`flex items-center gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 <Clock size={16} />
                 <div>
-                  <p className="font-medium">Last Updated</p>
-                  <p className="text-xs">
+                  <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Last Updated</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {new Date(task.updated_at).toLocaleDateString()}
                   </p>
                 </div>

@@ -126,48 +126,48 @@ export default function SystemSettingsPage() {
                 General Settings
               </CardTitle>
             </div>
-            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
+            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Basic system configuration
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6 space-y-4">
             <div>
-              <Label htmlFor="siteName" className={darkMode ? 'text-gray-300' : ''}>Site Name</Label>
+              <Label htmlFor="siteName" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Site Name</Label>
               <Input
                 id="siteName"
                 value={settings.siteName}
                 onChange={(e) => setSettings({...settings, siteName: e.target.value})}
-                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : ''}`}
+                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               />
             </div>
             <div>
-              <Label htmlFor="adminEmail" className={darkMode ? 'text-gray-300' : ''}>Admin Email</Label>
+              <Label htmlFor="adminEmail" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Admin Email</Label>
               <Input
                 id="adminEmail"
                 type="email"
                 value={settings.adminEmail}
                 onChange={(e) => setSettings({...settings, adminEmail: e.target.value})}
-                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : ''}`}
+                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               />
             </div>
             <div>
-              <Label htmlFor="maxUsers" className={darkMode ? 'text-gray-300' : ''}>Max Users Per Task</Label>
+              <Label htmlFor="maxUsers" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Max Users Per Task</Label>
               <Input
                 id="maxUsers"
                 type="number"
                 value={settings.maxUsersPerTask}
                 onChange={(e) => setSettings({...settings, maxUsersPerTask: e.target.value})}
-                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : ''}`}
+                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               />
             </div>
             <div>
-              <Label htmlFor="retention" className={darkMode ? 'text-gray-300' : ''}>Task Retention (Days)</Label>
+              <Label htmlFor="retention" className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Task Retention (Days)</Label>
               <Input
                 id="retention"
                 type="number"
                 value={settings.taskRetentionDays}
                 onChange={(e) => setSettings({...settings, taskRetentionDays: e.target.value})}
-                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : ''}`}
+                className={`mt-1 ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               />
               <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                 How long to keep completed tasks before archiving
@@ -185,7 +185,7 @@ export default function SystemSettingsPage() {
                 Notifications
               </CardTitle>
             </div>
-            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
+            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Configure notification preferences
             </CardDescription>
           </CardHeader>
@@ -250,13 +250,13 @@ export default function SystemSettingsPage() {
                 Task Management
               </CardTitle>
             </div>
-            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
+            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Default task settings
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6 space-y-4">
             <div>
-              <Label className={darkMode ? 'text-gray-300' : ''}>Default Task Priority</Label>
+              <Label className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Default Task Priority</Label>
               <div className="flex gap-2 mt-2">
                 {['low', 'medium', 'high'].map(priority => (
                   <Badge
@@ -306,7 +306,7 @@ export default function SystemSettingsPage() {
                 Security
               </CardTitle>
             </div>
-            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
+            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               System security settings
             </CardDescription>
           </CardHeader>
@@ -353,7 +353,7 @@ export default function SystemSettingsPage() {
           <CardTitle className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             System Information
           </CardTitle>
-          <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
+          <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             Current system status and version
           </CardDescription>
         </CardHeader>

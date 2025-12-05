@@ -72,6 +72,7 @@ export default function AdminTasksPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
   
   const initialSearch = useSearchParams().get("search") || "";
   const [search, setSearch] = useState(initialSearch); // State for search input, initialized from URL
@@ -92,6 +93,19 @@ export default function AdminTasksPage() {
   const router = useRouter();
   const searchParams = useSearchParams(); // Initialize useSearchParams
   const pathname = usePathname(); // Get current pathname
+
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    checkDarkMode();
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const currentSearchParams = new URLSearchParams(searchParams.toString());
@@ -320,15 +334,27 @@ export default function AdminTasksPage() {
   };
 
   const getStatusStyle = (status: string) => {
+    if (darkMode) {
+      switch (status) {
+        case "completed":
+          return "bg-green-900 text-green-50";
+        case "in_progress":
+          return "bg-blue-900 text-blue-50";
+        case "not_picked":
+          return "bg-gray-700 text-gray-50";
+        default:
+          return "bg-gray-700 text-gray-50";
+      }
+    }
     switch (status) {
       case "completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-50";
+        return "bg-green-100 text-green-800";
       case "in_progress":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-50";
+        return "bg-blue-100 text-blue-800";
       case "not_picked":
-        return "bg-gray-100 text-black dark:bg-gray-700 dark:text-gray-50";
+        return "bg-gray-100 text-black";
       default:
-        return "bg-gray-100 text-black dark:bg-gray-700 dark:text-gray-50";
+        return "bg-gray-100 text-black";
     }
   };
 
@@ -426,7 +452,7 @@ export default function AdminTasksPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="flex justify-center gap-2 text-gray-900 dark:text-gray-300">
+        <div className={`flex justify-center gap-2 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
           <span className="text-4xl animate-[bounce_1s_ease-in-out_0s_infinite]">.</span>
           <span className="text-4xl animate-[bounce_1s_ease-in-out_0.2s_infinite]">.</span>
           <span className="text-4xl animate-[bounce_1s_ease-in-out_0.4s_infinite]">.</span>
@@ -449,14 +475,14 @@ export default function AdminTasksPage() {
 
   return (
     <div className="p-3 md:p-6">
-      <Card className="bg-white dark:bg-black border-blue-100 dark:border-gray-800 shadow-sm overflow-hidden">
+      <Card className={`shadow-sm overflow-hidden ${darkMode ? 'bg-black border-gray-800' : 'bg-white border-blue-100'}`}>
         <CardHeader className="p-4 md:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
             <div>
-              <CardTitle className="text-xl md:text-2xl font-bold text-black dark:text-white">
+              <CardTitle className={`text-xl md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 Task Management
               </CardTitle>
-              <p className="text-xs md:text-sm text-black dark:text-gray-400 mt-1">
+              <p className={`text-xs md:text-sm mt-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Create and manage tasks for your team
               </p>
             </div>
@@ -680,12 +706,12 @@ export default function AdminTasksPage() {
             </DialogContent>
           </Dialog>
         </CardHeader>
-        <CardContent className="p-4 md:p-6">
+        <CardContent className={`p-4 md:p-6 ${darkMode ? 'bg-black' : 'bg-white'}`}>
           {/* Search Bar */}
           <div className="mb-6">
             <div className="relative">
               <svg
-                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -702,26 +728,26 @@ export default function AdminTasksPage() {
                 placeholder="Search tasks by title, description, or assigned user..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 h-10 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                className={`pl-10 h-10 ${darkMode ? 'bg-black border-gray-700 text-white placeholder:text-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-500'}`}
               />
             </div>
           </div>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 border-b-2 border-gray-200 dark:border-gray-800">
-                  <TableHead className="text-black dark:text-white text-sm font-semibold">Title</TableHead>
-                  <TableHead className="text-black dark:text-white text-sm font-semibold">Status</TableHead>
-                  <TableHead className="text-black dark:text-white text-sm font-semibold">Priority</TableHead>
-                  <TableHead className="text-black dark:text-white text-sm font-semibold">Deadline</TableHead>
-                  <TableHead className="text-black dark:text-white text-sm font-semibold">Assigned To</TableHead>
+                <TableRow className={`border-b-2 ${darkMode ? 'border-gray-800 bg-gray-900/50' : 'border-gray-200 bg-gray-50'}`}>
+                  <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Title</TableHead>
+                  <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Status</TableHead>
+                  <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Priority</TableHead>
+                  <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Deadline</TableHead>
+                  <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Assigned To</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tasks.map((task) => (
-                  <TableRow key={task.id}>
+                  <TableRow key={task.id} className={`border-b ${darkMode ? 'border-gray-800 hover:bg-gray-800/50' : 'border-gray-200 hover:bg-gray-50'}`}>
                     <TableCell 
-                      className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer text-sm hover:underline"
+                      className={`font-medium cursor-pointer text-sm hover:underline ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
                       onClick={() => router.push(`/admin/tasks/${task.id}`)}
                     >
                       <div className="truncate max-w-[200px] md:max-w-none">{task.title}</div>
@@ -751,22 +777,22 @@ export default function AdminTasksPage() {
                     >
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         task.priority === "high" 
-                          ? "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
+                          ? darkMode ? "bg-red-900/50 text-red-300" : "bg-red-100 text-red-800"
                           : task.priority === "medium"
-                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300"
-                          : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+                          ? darkMode ? "bg-yellow-900/50 text-yellow-300" : "bg-yellow-100 text-yellow-800"
+                          : darkMode ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-800"
                       }`}>
                         {task.priority}
                       </span>
                     </TableCell>
                     <TableCell 
-                      className="cursor-pointer text-sm font-medium"
+                      className={`cursor-pointer text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}
                       onClick={() => router.push(`/admin/tasks/${task.id}`)}
                     >
                       {task.deadline}
                     </TableCell>
                     <TableCell 
-                      className="cursor-pointer text-sm font-medium"
+                      className={`cursor-pointer text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}
                       onClick={() => router.push(`/admin/tasks/${task.id}`)}
                     >
                       <div className="truncate max-w-[150px] md:max-w-none">
@@ -783,7 +809,7 @@ export default function AdminTasksPage() {
           {tasks.length === 0 && (
             <div className="text-center py-8 md:py-12 px-4">
               <svg
-                className="h-10 w-10 md:h-12 md:w-12 mx-auto mb-4 text-gray-400 dark:text-gray-600"
+                className={`h-10 w-10 md:h-12 md:w-12 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -795,10 +821,10 @@ export default function AdminTasksPage() {
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                 />
               </svg>
-              <h3 className="text-sm md:text-base font-semibold mb-2 text-black dark:text-white">
+              <h3 className={`text-sm md:text-base font-semibold mb-2 ${darkMode ? 'text-white' : 'text-black'}`}>
                 No tasks found
               </h3>
-              <p className="text-xs md:text-sm text-black dark:text-slate-300 mb-4">
+              <p className={`text-xs md:text-sm mb-4 ${darkMode ? 'text-slate-300' : 'text-black'}`}>
                 {searchParams.get("search") ? `No tasks match "${searchParams.get("search")}"` : "Create your first task to get started"}
               </p>
               {!searchParams.get("search") && (

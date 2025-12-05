@@ -1,5 +1,5 @@
-import fetch from 'node-fetch';
-import { createClient } from '@supabase/supabase-js';
+import fetch from "node-fetch";
+import { createClient } from "@supabase/supabase-js";
 
 // ----------------------------
 // Supabase Initialization
@@ -37,9 +37,8 @@ export async function sendEmail({
   bcc,
   headers,
   params,
-  tags
+  tags,
 }: SendEmailParams) {
-  
   const apiKey = process.env.NEXT_PUBLIC_BREVO_API_KEY;
   const defaultSenderEmail =
     process.env.NEXT_PUBLIC_BREVO_SENDER_EMAIL || "no-reply@yourdomain.com";
@@ -76,7 +75,7 @@ export async function sendEmail({
     bcc,
     headers,
     params,
-    tags
+    tags,
   };
 
   try {
@@ -98,7 +97,6 @@ export async function sendEmail({
 
     console.log("✅ Email sent:", data);
     return { success: true, data };
-
   } catch (error) {
     console.error("🔥 Email sending failed:", error);
     return { success: false, error };
@@ -155,7 +153,7 @@ export async function sendPasswordResetEmail(
 // ⭐ OPTION 1 FIXED: TASK ASSIGNMENT EMAIL
 // ----------------------------------------------------
 export async function sendTaskAssignmentNotification(
-  userId: string,            // RECEIVES ONLY USER ID
+  userId: string, // RECEIVES ONLY USER ID
   taskTitle: string,
   taskLink: string,
   assignerName: string
@@ -203,7 +201,11 @@ export async function sendTaskAssignmentNotification(
 // ----------------------------------------------------
 // Admin Alert
 // ----------------------------------------------------
-export async function sendAdminAlert(toEmail: string, subject: string, alert: string) {
+export async function sendAdminAlert(
+  toEmail: string,
+  subject: string,
+  alert: string
+) {
   const htmlContent = `
     <p>Admin Alert:</p>
     <p>${alert}</p>

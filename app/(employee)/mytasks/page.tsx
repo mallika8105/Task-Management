@@ -101,15 +101,27 @@ export default function MyTasksPage() {
   }, [router]);
 
   const getPriorityColor = (priority: string) => {
+    if (darkMode) {
+      switch (priority) {
+        case "high":
+          return "bg-red-900 text-red-200 border-red-800";
+        case "medium":
+          return "bg-yellow-900 text-yellow-200 border-yellow-800";
+        case "low":
+          return "bg-green-900 text-green-200 border-green-800";
+        default:
+          return "bg-gray-800 text-gray-200 border-gray-700";
+      }
+    }
     switch (priority) {
       case "high":
-        return "destructive";
+        return "bg-red-100 text-red-800 border-red-200";
       case "medium":
-        return "default";
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "low":
-        return "secondary";
+        return "bg-green-100 text-green-800 border-green-200";
       default:
-        return "secondary";
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
@@ -336,33 +348,53 @@ export default function MyTasksPage() {
             <Button
               variant={filterStatus === "all" ? "default" : "outline"}
               onClick={() => setFilterStatus("all")}
-              className={`gap-1 text-sm ${darkMode && filterStatus !== "all" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
+              className={`gap-1 text-sm ${
+                filterStatus !== "all" 
+                  ? darkMode 
+                    ? 'bg-black text-gray-300 border-gray-700 hover:bg-gray-800' 
+                    : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
+                  : ''
+              }`}
             >
               <Filter className="h-4 w-4" />
               All
             </Button>
             <Button
-              variant={
-                filterStatus === "not_picked" ? "default" : "outline"
-              }
+              variant={filterStatus === "not_picked" ? "default" : "outline"}
               onClick={() => setFilterStatus("not_picked")}
-              className={`text-sm ${darkMode && filterStatus !== "not_picked" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
+              className={`text-sm ${
+                filterStatus !== "not_picked"
+                  ? darkMode
+                    ? 'bg-black text-gray-300 border-gray-700 hover:bg-gray-800'
+                    : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
+                  : ''
+              }`}
             >
               Not Started
             </Button>
             <Button
-              variant={
-                filterStatus === "in_progress" ? "default" : "outline"
-              }
+              variant={filterStatus === "in_progress" ? "default" : "outline"}
               onClick={() => setFilterStatus("in_progress")}
-              className={`text-sm ${darkMode && filterStatus !== "in_progress" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
+              className={`text-sm ${
+                filterStatus !== "in_progress"
+                  ? darkMode
+                    ? 'bg-black text-gray-300 border-gray-700 hover:bg-gray-800'
+                    : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
+                  : ''
+              }`}
             >
               In Progress
             </Button>
             <Button
               variant={filterStatus === "completed" ? "default" : "outline"}
               onClick={() => setFilterStatus("completed")}
-              className={`text-sm ${darkMode && filterStatus !== "completed" ? 'text-gray-300 border-gray-700 hover:bg-gray-800' : ''}`}
+              className={`text-sm ${
+                filterStatus !== "completed"
+                  ? darkMode
+                    ? 'bg-black text-gray-300 border-gray-700 hover:bg-gray-800'
+                    : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
+                  : ''
+              }`}
             >
               Completed
             </Button>
@@ -372,7 +404,7 @@ export default function MyTasksPage() {
         {/* Tasks Table */}
         <Card className={`shadow-sm ${darkMode ? 'bg-black border-gray-800' : 'border-gray-200'}`}>
           <CardHeader className="p-4 md:p-6">
-            <CardTitle className={`text-lg md:text-xl ${darkMode ? 'text-white' : ''}`}>All Tasks</CardTitle>
+            <CardTitle className={`text-lg md:text-xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>All Tasks</CardTitle>
           </CardHeader>
           <CardContent className="p-0 md:p-6 md:pt-0">
             {filteredTasks.length === 0 ? (
@@ -432,12 +464,12 @@ export default function MyTasksPage() {
                           className="p-2 md:p-3 cursor-pointer capitalize"
                           onClick={() => router.push(`/mytasks/${task.id}`)}
                         >
-                          <Badge variant={getPriorityColor(task.priority)} className="text-xs md:text-sm">
+                          <Badge className={`text-xs md:text-sm border ${getPriorityColor(task.priority)}`}>
                             {task.priority}
                           </Badge>
                         </td>
                         <td 
-                          className={`p-2 md:p-3 cursor-pointer text-sm md:text-base ${darkMode ? 'text-gray-300' : ''}`}
+                          className={`p-2 md:p-3 cursor-pointer text-sm md:text-base ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}
                           onClick={() => router.push(`/mytasks/${task.id}`)}
                         >
                           {new Date(task.deadline).toLocaleDateString()}

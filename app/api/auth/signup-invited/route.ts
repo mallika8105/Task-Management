@@ -16,11 +16,41 @@ const supabaseAdmin = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, fullName, role } = await request.json();
+    const { email, password, fullName, role, invitationToken } = await request.json();
 
     if (!email || !password || !fullName) {
       return NextResponse.json(
         { error: "Email, password, and full name are required" },
+        { status: 400 }
+      );
+    }
+
+    if (!invitationToken) {
+      return NextResponse.json(
+        { error: "Invitation token is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate invitation token
+    const { data: invitation, error: invitationError } = await supabaseAdmin
+      .from("invitations")
+      .select("*")
+      .eq("invitation_token", invitationToken)
+      .eq("status", "pending")
+      .single();
+
+    if (invitationError || !invitation) {
+      return NextResponse.json(
+        { error: "Invalid or expired invitation token" },
+        { status: 400 }
+      );
+    }
+
+    // Verify email matches invitation
+    if (invitation.email !== email) {
+      return NextResponse.json(
+        { error: "Email does not match invitation" },
         { status: 400 }
       );
     }
@@ -48,6 +78,17 @@ export async function POST(request: NextRequest) {
     // So we don't need to manually insert here
     
     if (authData.user) {
+      // Mark invitation as accepted
+      const { error: updateError } = await supabaseAdmin
+        .from("invitations")
+        .update({ status: "accepted" })
+        .eq("id", invitation.id);
+
+      if (updateError) {
+        console.error("Error updating invitation status:", updateError);
+        // Don't fail signup if this fails
+      }
+
       // Notify all admins about the new user signup
       try {
         const { data: admins, error: adminError } = await supabaseAdmin

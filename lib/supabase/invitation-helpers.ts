@@ -1,11 +1,31 @@
 import { supabase } from "./client";
 import { sendEmail } from "@/lib/brevo/emailService";
+import { randomBytes } from "crypto";
+
+// Generate a secure random token
+function generateInvitationToken(): string {
+  return randomBytes(32).toString('hex');
+}
 
 export async function createInvitation(
   email: string,
   invitedBy: string,
   role: "admin" | "employee" = "employee"
 ) {
+  // Get the inviter's name
+  const { data: inviter, error: inviterError } = await supabase
+    .from("users")
+    .select("full_name")
+    .eq("id", invitedBy)
+    .single();
+
+  if (inviterError) {
+    console.error("Error fetching inviter details:", inviterError);
+    throw new Error("Unable to fetch inviter information");
+  }
+
+  const inviterName = inviter?.full_name || "Zeloite Admin";
+
   // Check if invitation already exists
   const { data: existing } = await supabase
     .from("invitations")
@@ -13,7 +33,10 @@ export async function createInvitation(
     .eq("email", email)
     .single();
 
-  // If invitation exists and is pending, update it
+  // Generate a unique token
+  const invitationToken = generateInvitationToken();
+
+  // If invitation exists and is pending, update it with new token
   if (existing) {
     if (existing.status === "pending") {
       const { data, error } = await supabase
@@ -21,25 +44,15 @@ export async function createInvitation(
         .update({
           invited_by: invitedBy,
           created_at: new Date().toISOString(),
+          invitation_token: invitationToken,
         })
         .eq("email", email)
         .select();
 
       if (error) throw error;
 
-      const signupUrl = `${
-        window.location.origin
-      }/auth/signup?email=${encodeURIComponent(email)}`;
-      console.log(
-        "Invitation updated! Share this URL with the user:",
-        signupUrl
-      );
-      console.log(
-        "User should sign up with email:",
-        email,
-        "and will have role:",
-        role
-      );
+      // Send updated invitation email with new token
+      await sendInvitationEmail(email, invitationToken, role, inviterName);
 
       return data;
     } else if (existing.status === "accepted") {
@@ -49,7 +62,7 @@ export async function createInvitation(
     }
   }
 
-  // Create new invitation
+  // Create new invitation with token
   const { data, error } = await supabase
     .from("invitations")
     .insert([
@@ -58,6 +71,7 @@ export async function createInvitation(
         invited_by: invitedBy,
         role,
         status: "pending",
+        invitation_token: invitationToken,
       },
     ])
     .select();
@@ -65,21 +79,34 @@ export async function createInvitation(
   if (error) throw error;
 
   // Send invitation email
-  const signupUrl = `${
-    process.env.NEXT_PUBLIC_BASE_URL
-  }/auth/signup?email=${encodeURIComponent(email)}`;
+  await sendInvitationEmail(email, invitationToken, role, inviterName);
 
-  const subject = "You're invited to join Task Management System!";
+  return data;
+}
+
+async function sendInvitationEmail(
+  email: string,
+  token: string,
+  role: string,
+  invitedBy: string
+) {
+  const signupUrl = `${
+    process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+  }/auth/signup?token=${token}`;
+
+  const subject = "You're invited to join Zeloite workspace!";
   const htmlContent = `
     <p>Hello,</p>
-    <p>You have been invited to join the Task Management System by Mallika M. Please click the link below to sign up and accept your invitation:</p>
-    <p><a href="${signupUrl}">Accept Invitation and Sign Up</a></p>
+    <p><strong>${invitedBy}</strong> has invited you to join the Zeloite workspace on Task Management System.</p>
+    <p>Please click the link below to accept your invitation and create your account:</p>
+    <p><a href="${signupUrl}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">Accept Invitation</a></p>
     <p>Your role will be: <strong>${role}</strong></p>
+    <p>This invitation link is unique to you and can only be used once.</p>
     <p>If you did not expect this invitation, you can safely ignore this email.</p>
   `;
 
   const emailResult = await sendEmail({
-    to: [{ email, name: email }], // Use email as name if full_name is not available
+    to: [{ email, name: email }],
     subject,
     htmlContent,
     tags: ["invitation"],
@@ -87,14 +114,9 @@ export async function createInvitation(
 
   if (!emailResult.success) {
     console.error("Failed to send invitation email:", emailResult.error);
-    // Optionally, you might want to throw an error or handle this more gracefully
-    // depending on whether a failed email send should prevent the invitation from being created in DB.
-    // For now, we'll let the DB invitation creation succeed even if email fails.
   } else {
     console.log("Invitation email sent successfully to:", email);
   }
-
-  return data;
 }
 
 export async function acceptInvitation(email: string, userId: string) {

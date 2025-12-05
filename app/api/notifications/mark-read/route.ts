@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
-import { markNotificationAsRead, markAllNotificationsAsRead } from "@/lib/supabase/notification-helpers";
+import {
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+} from "@/lib/supabase/notification-helpers";
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,12 +11,11 @@ export async function POST(request: NextRequest) {
 
     if (markAll) {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
-        return NextResponse.json(
-          { error: "Unauthorized" },
-          { status: 401 }
-        );
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
 
       const { data, error } = await markAllNotificationsAsRead(user.id);

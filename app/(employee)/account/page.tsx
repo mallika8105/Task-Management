@@ -192,7 +192,7 @@ export default function AccountPage() {
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="fullName" className={darkMode ? "text-gray-300" : ""}>
+                  <Label htmlFor="fullName" className={darkMode ? "text-gray-300" : "text-gray-700"}>
                     Full Name
                   </Label>
                   <Input
@@ -201,12 +201,12 @@ export default function AccountPage() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
-                    className={`mt-1 ${darkMode ? "bg-gray-900 border-gray-800 text-white" : ""}`}
+                    className={`mt-1 ${darkMode ? "bg-gray-900 border-gray-800 text-white" : "bg-white border-gray-300 text-gray-900"}`}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="email" className={darkMode ? "text-gray-300" : ""}>
+                  <Label htmlFor="email" className={darkMode ? "text-gray-300" : "text-gray-700"}>
                     Email Address
                   </Label>
                   <Input
@@ -223,7 +223,7 @@ export default function AccountPage() {
               </div>
 
               <div>
-                <Label htmlFor="phone" className={darkMode ? "text-gray-300" : ""}>
+                <Label htmlFor="phone" className={darkMode ? "text-gray-300" : "text-gray-700"}>
                   Phone Number
                 </Label>
                 <Input
@@ -232,7 +232,7 @@ export default function AccountPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+91 81054 12345"
-                  className={`mt-1 ${darkMode ? "bg-gray-900 border-gray-800 text-white" : ""}`}
+                  className={`mt-1 ${darkMode ? "bg-gray-900 border-gray-800 text-white" : "bg-white border-gray-300 text-gray-900"}`}
                 />
               </div>
 
@@ -253,7 +253,15 @@ export default function AccountPage() {
                   darkMode ? "border-gray-800" : "border-gray-200"
                 }`}
               >
-                <Button type="submit" className="h-10 px-6 bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-100" disabled={loading}>
+                <Button 
+                  type="submit" 
+                  className={`h-10 px-6 ${
+                    darkMode 
+                      ? "bg-white text-black hover:bg-gray-100" 
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                  }`}
+                  disabled={loading}
+                >
                   {loading ? "Saving..." : "Save Changes"}
                 </Button>
               </div>

@@ -8,6 +8,7 @@ import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,6 +16,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetMessage, setResetMessage] = useState<string | null>(null); // New state for reset messages
+  const [showPassword, setShowPassword] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -57,30 +60,38 @@ export default function LoginPage() {
           // Mark invitation as accepted after successful signup/login
           await acceptInvitation(email, user.id);
 
-          // Send login notification to admins (only for non-admin users)
-          if (user.role !== 'admin') {
-            try {
-              await fetch('/api/auth/login-notification', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  userId: user.id,
-                  userName: user.user_metadata?.full_name || email,
-                  userEmail: email,
-                }),
-              });
-            } catch (notifErr) {
-              // Log error but don't block login
-              console.error('Failed to send login notification:', notifErr);
+          // Route based on the checkbox selection
+          if (isAdmin) {
+            if (user.role === "admin") {
+              router.push("/admin/dashboard");
+            } else {
+              setError("You don't have admin privileges.");
+              return;
             }
-          }
-
-          if (user.role === 'admin') {
-            router.push("/admin/dashboard");
           } else {
-            router.push("/dashboard");
+            // Send login notification to admins (only for non-admin users)
+            if (user.role !== 'admin') {
+              try {
+                await fetch('/api/auth/login-notification', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    userId: user.id,
+                    userName: user.user_metadata?.full_name || email,
+                    userEmail: email,
+                  }),
+                });
+              } catch (notifErr) {
+                // Log error but don't block login
+                console.error('Failed to send login notification:', notifErr);
+              }
+              router.push("/dashboard");
+            } else {
+              setError("Please check 'I am admin' if you have admin privileges.");
+              return;
+            }
           }
         } else {
           setError("Login successful, but could not retrieve user data. Please try again.");
@@ -151,8 +162,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <Card className="w-[350px]">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-semibold tracking-tight">Sign in</CardTitle>
-          <CardDescription className="text-sm leading-none text-muted-foreground">
+          <CardTitle className="text-gray-900">Sign in</CardTitle>
+          <CardDescription className="text-gray-600">
             Enter your credentials to access your account.
           </CardDescription>
         </CardHeader>
@@ -167,6 +178,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                 suppressHydrationWarning={true}
               />
             </div>
@@ -178,7 +190,7 @@ export default function LoginPage() {
                   <Button
                     type="button"
                     variant="link"
-                    className="px-0 text-xs text-muted-foreground hover:text-foreground"
+                    className="px-0 text-xs text-gray-600 hover:text-gray-900"
                     onClick={handleForgotPassword}
                     disabled={loading}
                     suppressHydrationWarning={true}
@@ -187,14 +199,37 @@ export default function LoginPage() {
                   </Button>
                 )}
               </div>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                suppressHydrationWarning={true}
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 pr-10"
+                  suppressHydrationWarning={true}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center">
+              <input
+                id="admin-checkbox"
+                type="checkbox"
+                checked={isAdmin}
+                onChange={(e) => setIsAdmin(e.target.checked)}
+                className="rounded border-gray-300 text-primary focus:ring-primary"
               />
+              <Label htmlFor="admin-checkbox" className="ml-2 text-sm text-gray-600 cursor-pointer">
+                I am admin
+              </Label>
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
             {resetMessage && <p className="text-green-500 text-sm">{resetMessage}</p>} {/* Display reset message */}

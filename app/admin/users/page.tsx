@@ -36,7 +36,7 @@ import {
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { createInvitation } from "@/lib/supabase/invitation-helpers";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Trash2 } from "lucide-react";
 
 interface User {
   id: string;
@@ -132,20 +132,20 @@ export default function AdminUsersPage() {
 
     try {
       await createInvitation(inviteEmail, currentUser.id, inviteRole);
+      setLoading(false);
       setInviteSuccess(true);
       setInviteEmail("");
       setInviteRole("employee");
       
-      // Refresh all data after inviting a user
-      await fetchData();
-      
-      setTimeout(() => {
+      // Close dialog after showing success message
+      setTimeout(async () => {
         setIsInviteDialogOpen(false);
         setInviteSuccess(false);
+        // Refresh data after dialog closes to prevent flicker
+        await fetchData();
       }, 2000);
     } catch (err: any) {
       setError(err.message || "Failed to send invitation.");
-    } finally {
       setLoading(false);
     }
   };
@@ -253,10 +253,52 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleDeleteUser = async (userId: string, userEmail: string, userName: string) => {
+    if (!confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+
+      // Call the API route to delete the user
+      const response = await fetch("/api/padmin/delete-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { "Authorization": `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ email: userEmail }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (parseError) {
+          throw new Error(`API Error: ${errorText || "Unknown error"}`);
+        }
+        throw new Error(errorData.error || "Failed to delete user account.");
+      }
+
+      // Refresh the user list
+      await fetchData();
+    } catch (err: any) {
+      setError(err.message || "Failed to delete user.");
+      console.error("Error deleting user:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="flex justify-center gap-2 text-gray-900 dark:text-gray-300">
+        <div className={`flex justify-center gap-2 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
           <span className="text-4xl animate-[bounce_1s_ease-in-out_0s_infinite]">.</span>
           <span className="text-4xl animate-[bounce_1s_ease-in-out_0.2s_infinite]">.</span>
           <span className="text-4xl animate-[bounce_1s_ease-in-out_0.4s_infinite]">.</span>
@@ -295,13 +337,13 @@ export default function AdminUsersPage() {
                 Invite User
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className={`sm:max-w-[425px] max-h-[90vh] overflow-y-auto ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
               <DialogHeader>
-                <DialogTitle>Invite New User</DialogTitle>
+                <DialogTitle className={darkMode ? 'text-white' : 'text-gray-900'}>Invite New User</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleInviteUser} className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className={darkMode ? 'text-gray-200' : 'text-gray-900'}>Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -309,22 +351,23 @@ export default function AdminUsersPage() {
                     required
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
+                    className={darkMode ? 'bg-gray-800 border-gray-700 text-white placeholder:text-gray-400' : 'bg-white border-gray-300 text-gray-900'}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="role">Role</Label>
+                  <Label htmlFor="role" className={darkMode ? 'text-gray-200' : 'text-gray-900'}>Role</Label>
                   <Select
                     value={inviteRole}
                     onValueChange={(value: "admin" | "employee") =>
                       setInviteRole(value)
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'}>
                       <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="employee">Employee</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                    <SelectContent className={darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300'}>
+                      <SelectItem value="employee" className={darkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900'}>Employee</SelectItem>
+                      <SelectItem value="admin" className={darkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900'}>Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -334,7 +377,11 @@ export default function AdminUsersPage() {
                     Invitation sent successfully!
                   </p>
                 )}
-                <Button type="submit" disabled={loading}>
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  className={darkMode ? 'bg-teal-600 hover:bg-teal-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}
+                >
                   {loading ? "Sending..." : "Send Invitation"}
                 </Button>
               </form>
@@ -345,39 +392,52 @@ export default function AdminUsersPage() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50 dark:bg-gray-900/50 border-b-2 border-gray-200 dark:border-gray-800">
-                  <TableHead className="text-black dark:text-white text-sm font-semibold">Full Name</TableHead>
-                  <TableHead className="text-black dark:text-white text-sm font-semibold">Email</TableHead>
-                  <TableHead className="text-black dark:text-white text-sm font-semibold">Role</TableHead>
-                  <TableHead className="text-black dark:text-white text-sm font-semibold">Actions</TableHead>
+                <TableRow className={`border-b-2 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
+                  <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Full Name</TableHead>
+                  <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Email</TableHead>
+                  <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Role</TableHead>
+                  <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="text-sm font-medium">
+                  <TableRow key={user.id} className={`border-b ${darkMode ? 'border-gray-800 hover:bg-gray-800/50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                    <TableCell className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-black'}`}>
                       <div className="truncate max-w-[150px] md:max-w-none">{user.full_name}</div>
                     </TableCell>
-                    <TableCell className="text-sm font-medium">
+                    <TableCell className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-black'}`}>
                       <div className="truncate max-w-[150px] md:max-w-none">{user.email}</div>
                     </TableCell>
-                    <TableCell className="text-sm font-medium capitalize">{user.role}</TableCell>
+                    <TableCell className={`text-sm font-medium capitalize ${darkMode ? 'text-gray-300' : 'text-black'}`}>{user.role}</TableCell>
                     <TableCell>
-                      <Select
-                        value={user.role}
-                        onValueChange={(value: "admin" | "employee") =>
-                          handleRoleChange(user.id, value)
-                        }
-                        disabled={user.id === currentUser.id} // Prevent changing own role
-                      >
-                        <SelectTrigger className="w-[120px] md:w-[180px] text-xs md:text-sm bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-black dark:text-white">
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="employee">Employee</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={user.role}
+                          onValueChange={(value: "admin" | "employee") =>
+                            handleRoleChange(user.id, value)
+                          }
+                          disabled={user.id === currentUser.id} // Prevent changing own role
+                        >
+                          <SelectTrigger className={`w-[100px] md:w-[140px] text-xs md:text-sm ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}>
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="employee">Employee</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {user.id !== currentUser.id && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.id, user.email, user.full_name)}
+                            className="h-8 w-8 p-0"
+                            title="Delete user"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -402,29 +462,29 @@ export default function AdminUsersPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gray-50 dark:bg-gray-900/50 border-b-2 border-gray-200 dark:border-gray-800">
-                    <TableHead className="text-black dark:text-white text-sm font-semibold">Email</TableHead>
-                    <TableHead className="text-black dark:text-white text-sm font-semibold">Invited On</TableHead>
-                    <TableHead className="text-black dark:text-white text-sm font-semibold">Status</TableHead>
-                    <TableHead className="text-black dark:text-white text-sm font-semibold">Actions</TableHead>
+                  <TableRow className={`border-b-2 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
+                    <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Email</TableHead>
+                    <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Invited On</TableHead>
+                    <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Status</TableHead>
+                    <TableHead className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                 {invitations.map((invitation) => (
-                    <TableRow key={invitation.id}>
-                      <TableCell className="text-sm font-medium">
+                    <TableRow key={invitation.id} className={`border-b ${darkMode ? 'border-gray-800 hover:bg-gray-800/50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                      <TableCell className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-black'}`}>
                         <div className="truncate max-w-[150px] md:max-w-none">{invitation.email}</div>
                       </TableCell>
-                      <TableCell className="text-sm font-medium">
+                      <TableCell className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-black'}`}>
                         {new Date(invitation.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                           invitation.status === 'accepted' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                            ? darkMode ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'
                             : invitation.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                            ? darkMode ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
+                            : darkMode ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-800'
                         }`}>
                           {invitation.status === 'accepted' ? '✓ Signed Up' : invitation.status}
                         </span>

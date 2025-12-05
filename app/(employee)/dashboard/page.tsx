@@ -265,19 +265,15 @@ export default function DashboardPage() {
               className={`flex items-center justify-center gap-2 px-3 py-2 border rounded-lg text-xs md:text-sm cursor-pointer transition-all w-full ${
                 showDatePicker
                   ? darkMode 
-                    ? 'bg-purple-900 border-purple-700 shadow-lg shadow-purple-900/50' 
-                    : 'bg-purple-50 border-purple-300 shadow-lg shadow-purple-200/50'
+                    ? 'bg-gray-800 border-gray-700 shadow-lg' 
+                    : 'bg-gray-50 border-gray-300 shadow-lg'
                   : darkMode 
                     ? 'bg-gray-900 border-gray-800 hover:bg-gray-800 hover:border-gray-700' 
                     : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
               }`}
             >
-              <Calendar size={16} className={darkMode ? 'text-purple-400' : 'text-purple-600'} />
-              <span className={
-                showDatePicker
-                  ? darkMode ? 'text-purple-300' : 'text-purple-700'
-                  : darkMode ? 'text-gray-300' : 'text-gray-700'
-              }>
+              <Calendar size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
+              <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
                 {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </button>
@@ -306,8 +302,8 @@ export default function DashboardPage() {
                     }}
                     className={`w-full px-3 py-2 text-xs font-medium rounded-md transition-all ${
                       darkMode 
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg' 
-                        : 'bg-purple-500 hover:bg-purple-600 text-white shadow-md hover:shadow-lg'
+                        ? 'bg-white text-black hover:bg-gray-100' 
+                        : 'bg-gray-900 text-white hover:bg-gray-800'
                     }`}
                   >
                     Reset to Today
@@ -316,7 +312,7 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
-          <Button className="bg-gray-900 text-white hover:bg-gray-800 text-sm w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-100">
+          <Button className={`text-sm w-full sm:w-auto ${darkMode ? 'bg-white text-black hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
             <Download size={16} className="mr-2" />
             Export
           </Button>
@@ -362,7 +358,7 @@ export default function DashboardPage() {
           <CardContent>
             <div className="space-y-3">
               {/* Graph */}
-              <div className="h-64 relative bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-xl p-4">
+              <div className={`h-64 relative rounded-xl p-4 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
                 <svg className="w-full h-full" viewBox="0 0 700 220">
                   {/* Gradient definitions */}
                   <defs>
@@ -691,7 +687,7 @@ export default function DashboardPage() {
                       </span>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" className="dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white">
+                  <Button variant="ghost" size="sm" className={darkMode ? 'text-gray-300 hover:bg-gray-800 hover:text-white' : ''}>
                     View
                   </Button>
                 </div>
@@ -702,7 +698,7 @@ export default function DashboardPage() {
             <Button
               variant="outline"
               onClick={() => router.push("/mytasks")}
-              className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              className={darkMode ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
             >
               View All Tasks
             </Button>

@@ -218,19 +218,15 @@ export default function AdminDashboardPage() {
               className={`flex items-center justify-center gap-2 px-3 py-2 border rounded-lg text-xs md:text-sm cursor-pointer transition-all w-full ${
                 showDatePicker
                   ? darkMode 
-                    ? 'bg-purple-900 border-purple-700 shadow-lg shadow-purple-900/50' 
-                    : 'bg-purple-50 border-purple-300 shadow-lg shadow-purple-200/50'
+                    ? 'bg-gray-800 border-gray-700 shadow-lg' 
+                    : 'bg-gray-50 border-gray-300 shadow-lg'
                   : darkMode 
                     ? 'bg-gray-900 border-gray-800 hover:bg-gray-800 hover:border-gray-700' 
                     : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
               }`}
             >
-              <Calendar size={16} className={darkMode ? 'text-purple-400' : 'text-purple-600'} />
-              <span className={
-                showDatePicker
-                  ? darkMode ? 'text-purple-300' : 'text-purple-700'
-                  : darkMode ? 'text-gray-300' : 'text-gray-700'
-              }>
+              <Calendar size={16} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
+              <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
                 {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </button>
@@ -259,8 +255,8 @@ export default function AdminDashboardPage() {
                     }}
                     className={`w-full px-3 py-2 text-xs font-medium rounded-md transition-all ${
                       darkMode 
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg' 
-                        : 'bg-purple-500 hover:bg-purple-600 text-white shadow-md hover:shadow-lg'
+                        ? 'bg-white text-black hover:bg-gray-100' 
+                        : 'bg-gray-900 text-white hover:bg-gray-800'
                     }`}
                   >
                     Reset to Today
@@ -269,7 +265,7 @@ export default function AdminDashboardPage() {
               </div>
             )}
           </div>
-          <Button className="bg-gray-900 text-white hover:bg-gray-800 text-sm w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-100">
+          <Button className={`text-sm w-full sm:w-auto ${darkMode ? 'bg-white text-black hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
             <Download size={16} className="mr-2" />
             Export Report
           </Button>
@@ -308,14 +304,14 @@ export default function AdminDashboardPage() {
             <CardTitle className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               System Activity
             </CardTitle>
-            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
+            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Task completion and user activity over the last 30 days
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             <div className="space-y-3">
               {/* Graph */}
-              <div className="h-56 md:h-64 relative bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 dark:from-purple-950/20 dark:via-blue-950/20 dark:to-cyan-950/20 rounded-xl p-4">
+              <div className={`h-56 md:h-64 relative rounded-xl p-4 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
                 <svg className="w-full h-full" viewBox="0 0 700 220">
                   {/* Gradient definitions */}
                   <defs>
@@ -479,7 +475,7 @@ export default function AdminDashboardPage() {
             <CardTitle className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               Task Status
             </CardTitle>
-            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
+            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Current task distribution
             </CardDescription>
           </CardHeader>
@@ -511,7 +507,7 @@ export default function AdminDashboardPage() {
             <CardTitle className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               Task Management
             </CardTitle>
-            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
+            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Search and manage all tasks in the system
             </CardDescription>
           </div>
@@ -524,7 +520,7 @@ export default function AdminDashboardPage() {
                 placeholder="Search tasks by title..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`pl-10 ${darkMode ? 'bg-gray-900 border-gray-800 text-white placeholder:text-gray-500' : ''}`}
+                className={`pl-10 ${darkMode ? 'bg-gray-900 border-gray-800 text-white placeholder:text-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400'}`}
               />
             </div>
             <div className="flex flex-wrap gap-2">
@@ -734,7 +730,7 @@ export default function AdminDashboardPage() {
                       size="sm"
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
-                      className={`text-xs ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800 disabled:opacity-50' : ''}`}
+                      className={`text-xs ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800 disabled:opacity-50' : 'text-gray-900 border-gray-300 hover:bg-gray-50 disabled:opacity-50'}`}
                     >
                       Previous
                     </Button>
@@ -794,7 +790,7 @@ export default function AdminDashboardPage() {
                       size="sm"
                       onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
-                      className={`text-xs ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800 disabled:opacity-50' : ''}`}
+                      className={`text-xs ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800 disabled:opacity-50' : 'text-gray-900 border-gray-300 hover:bg-gray-50 disabled:opacity-50'}`}
                     >
                       Next
                     </Button>
@@ -808,7 +804,7 @@ export default function AdminDashboardPage() {
           <div className="mt-4 pt-4">
             <Button 
               variant="outline" 
-              className={`w-full text-sm ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800' : ''}`}
+              className={`w-full text-sm ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800' : 'text-gray-900 border-gray-300 hover:bg-gray-50'}`}
               onClick={() => router.push("/admin/tasks")}
             >
               View All Tasks
@@ -824,11 +820,11 @@ export default function AdminDashboardPage() {
             <CardTitle className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               Recent Users
             </CardTitle>
-            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : ''}`}>
+            <CardDescription className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Recently added and active users in the system
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={() => router.push("/admin/users")} className={`w-full sm:w-auto text-xs ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800' : ''}`}>
+          <Button variant="outline" size="sm" onClick={() => router.push("/admin/users")} className={`w-full sm:w-auto text-xs ${darkMode ? 'text-white border-gray-700 hover:bg-gray-800' : 'text-gray-900 border-gray-300 hover:bg-gray-50'}`}>
             View All
           </Button>
         </CardHeader>

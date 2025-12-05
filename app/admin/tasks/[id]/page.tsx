@@ -335,7 +335,7 @@ export default function AdminTaskDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full p-6">
-        <div className="flex justify-center gap-2 text-gray-600 dark:text-gray-300">
+        <div className={`flex justify-center gap-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
           <span className="text-4xl animate-[bounce_1s_ease-in-out_0s_infinite]">.</span>
           <span className="text-4xl animate-[bounce_1s_ease-in-out_0.2s_infinite]">.</span>
           <span className="text-4xl animate-[bounce_1s_ease-in-out_0.4s_infinite]">.</span>
@@ -349,28 +349,54 @@ export default function AdminTaskDetailPage() {
   }
 
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low":
-        return "bg-green-100 text-green-800 border-green-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+    if (darkMode) {
+      switch (priority) {
+        case "high":
+          return "bg-red-900 text-red-200 border-red-700";
+        case "medium":
+          return "bg-yellow-900 text-yellow-200 border-yellow-700";
+        case "low":
+          return "bg-green-900 text-green-200 border-green-700";
+        default:
+          return "bg-gray-800 text-gray-200 border-gray-600";
+      }
+    } else {
+      switch (priority) {
+        case "high":
+          return "bg-red-100 text-red-800 border-red-200";
+        case "medium":
+          return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        case "low":
+          return "bg-green-100 text-green-800 border-green-200";
+        default:
+          return "bg-gray-100 text-gray-800 border-gray-200";
+      }
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "in_progress":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "not_picked":
-        return "bg-gray-100 text-gray-800 border-gray-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+    if (darkMode) {
+      switch (status) {
+        case "completed":
+          return "bg-green-900 text-green-200 border-green-700";
+        case "in_progress":
+          return "bg-blue-900 text-blue-200 border-blue-700";
+        case "not_picked":
+          return "bg-gray-800 text-gray-200 border-gray-600";
+        default:
+          return "bg-gray-800 text-gray-200 border-gray-600";
+      }
+    } else {
+      switch (status) {
+        case "completed":
+          return "bg-green-100 text-green-800 border-green-200";
+        case "in_progress":
+          return "bg-blue-100 text-blue-800 border-blue-200";
+        case "not_picked":
+          return "bg-gray-100 text-gray-800 border-gray-200";
+        default:
+          return "bg-gray-100 text-gray-800 border-gray-200";
+      }
     }
   };
 
@@ -381,13 +407,13 @@ export default function AdminTaskDetailPage() {
         <Button
           variant="ghost"
           onClick={() => router.push("/admin/tasks")}
-          className="mb-4 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800"
+          className={`mb-4 ${darkMode ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}`}
         >
           <ArrowLeft size={16} className="mr-2" />
           Back to Tasks
         </Button>
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Task Details</h1>
+          <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Task Details</h1>
           <Button
             variant="destructive"
             onClick={handleDelete}
@@ -486,7 +512,7 @@ export default function AdminTaskDetailPage() {
                 </Select>
               </div>
 
-              <Button onClick={handleUpdate} disabled={updating} className="w-full bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-100">
+              <Button onClick={handleUpdate} disabled={updating} className={`w-full ${darkMode ? 'bg-white text-black hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
                 <Save size={16} className="mr-2" />
                 {updating ? "Saving..." : "Save Changes"}
               </Button>
@@ -506,10 +532,14 @@ export default function AdminTaskDetailPage() {
               <div className="space-y-4 max-h-96 overflow-y-auto px-1 py-2">
                 {comments.length === 0 ? (
                   <div className="text-center py-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 mb-3">
-                      <FileText size={24} className="text-purple-600 dark:text-purple-400" />
+                    <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-3 ${
+                      darkMode 
+                        ? 'bg-gray-800' 
+                        : 'bg-gray-100'
+                    }`}>
+                      <FileText size={24} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       No comments yet. Start the conversation!
                     </p>
                   </div>
@@ -524,15 +554,19 @@ export default function AdminTaskDetailPage() {
                         <div
                           className={`relative rounded-2xl p-4 shadow-lg max-w-[85%] ${
                             isOwnComment
-                              ? 'bg-gradient-to-br from-purple-500 via-purple-600 to-pink-600 text-white rounded-tr-sm'
-                              : 'bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900 border border-gray-200 dark:from-gray-800 dark:to-gray-900 dark:text-white dark:border-gray-700 rounded-tl-sm'
+                              ? darkMode
+                                ? 'bg-blue-700 text-white rounded-tr-sm border border-blue-800'
+                                : 'bg-blue-600 text-white rounded-tr-sm border border-blue-700'
+                              : darkMode
+                              ? 'bg-gray-800 text-white border border-gray-700 rounded-tl-sm'
+                              : 'bg-gray-50 text-gray-900 border border-gray-200 rounded-tl-sm'
                           }`}
                         >
                           <div className="mb-2">
-                            <p className={`text-sm font-semibold ${isOwnComment ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                            <p className={`text-sm font-semibold ${isOwnComment || darkMode ? 'text-white' : 'text-gray-900'}`}>
                               {isOwnComment ? 'You' : (comment.user?.full_name || "Unknown User")}
                             </p>
-                            <p className={`text-xs mt-0.5 ${isOwnComment ? 'text-purple-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                            <p className={`text-xs mt-0.5 ${isOwnComment ? 'text-blue-50' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                               {new Date(comment.created_at).toLocaleString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
@@ -547,7 +581,7 @@ export default function AdminTaskDetailPage() {
                           <p className={`text-sm leading-relaxed whitespace-pre-wrap ${
                             isOwnComment 
                               ? 'text-white' 
-                              : 'text-gray-800 dark:text-gray-200'
+                              : darkMode ? 'text-gray-200' : 'text-gray-800'
                           }`}>
                             {comment.comment}
                           </p>
@@ -568,7 +602,7 @@ export default function AdminTaskDetailPage() {
                   className={`w-full ${darkMode ? 'bg-gray-900 border-gray-800 text-white placeholder:text-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-500'}`}
                 />
                 <Button
-                  className="mt-3 bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-100"
+                  className={`mt-3 ${darkMode ? 'bg-white text-black hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}
                   onClick={handleSubmitComment}
                   disabled={submittingComment || !newComment.trim()}
                 >
@@ -589,7 +623,7 @@ export default function AdminTaskDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Priority</label>
+                <label className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Priority</label>
                 <div className="mt-1">
                   <Badge className={`${getPriorityColor(task.priority)} capitalize`}>
                     {task.priority}
@@ -598,7 +632,7 @@ export default function AdminTaskDetailPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</label>
+                <label className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Status</label>
                 <div className="mt-1">
                   <Badge className={`${getStatusColor(task.status)} capitalize`}>
                     {task.status.replace("_", " ")}
@@ -608,12 +642,12 @@ export default function AdminTaskDetailPage() {
 
               {assignedUser && (
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Assigned To</label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
+                  <label className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Assigned To</label>
+                  <p className={`mt-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     {assignedUser.full_name}
-                    {assignedUser.status === 'inactive' && <span className="text-gray-500 dark:text-gray-400"> (inactive)</span>}
+                    {assignedUser.status === 'inactive' && <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}> (inactive)</span>}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{assignedUser.email}</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{assignedUser.email}</p>
                 </div>
               )}
             </CardContent>
@@ -625,30 +659,30 @@ export default function AdminTaskDetailPage() {
               <CardTitle className={`text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>Task Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <div className={`flex items-center gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 <Clock size={16} />
                 <div>
-                  <p className="font-medium">Created</p>
-                  <p className="text-xs">
+                  <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Created</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {new Date(task.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <div className={`flex items-center gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 <Clock size={16} />
                 <div>
-                  <p className="font-medium">Last Updated</p>
-                  <p className="text-xs">
+                  <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Last Updated</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {new Date(task.updated_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
               {task.deadline && (
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                <div className={`flex items-center gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <Calendar size={16} />
                   <div>
-                    <p className="font-medium">Deadline</p>
-                    <p className="text-xs">
+                    <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Deadline</p>
+                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       {new Date(task.deadline).toLocaleDateString()}
                     </p>
                   </div>
