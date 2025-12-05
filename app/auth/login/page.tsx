@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signInWithEmail, resendConfirmationEmail, getCurrentUser, sendPasswordResetEmail, USE_MOCK_AUTH } from "@/lib/supabase/auth-helpers";
 import { acceptInvitation } from "@/lib/supabase/invitation-helpers"; // Import acceptInvitation
@@ -10,7 +10,7 @@ import { Label } from "@/app/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Eye, EyeOff } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -149,7 +149,7 @@ export default function LoginPage() {
     setResetMessage(null);
     try {
       await sendPasswordResetEmail(email);
-      setResetMessage("Password reset email sent. Please check your inbox.");
+      setResetMessage("Password reset email sents. Please check your inbox.");
     } catch (err: any) {
       console.error("Forgot password error:", err);
       setError(err.message || "Failed to send password reset email.");
@@ -252,5 +252,22 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <Card className="w-[350px]">
+          <CardHeader className="text-center">
+            <CardTitle className="text-gray-900">Sign in</CardTitle>
+            <CardDescription className="text-gray-600">Loading...</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
